@@ -12,7 +12,7 @@ build/smug: setuplocal main.go
 	go build -o build/smug main.go
 
 run: build/smug
-	./bin/run_it
+	./bin/run_local
 
 clean: setuplocal
 	go clean

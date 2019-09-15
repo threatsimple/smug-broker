@@ -68,6 +68,17 @@ func (ib *IrcBroker) Run(dis Dispatcher) {
         }
         dis.Broadcast(ev)
     })
+    ib.conn.AddCallback("CTCP_ACTION", func (e *libirc.Event) {
+        if e.Arguments[0] == ib.channel {
+            ev := &Event{
+                Origin: ib,
+                Nick: e.Nick,
+                Text: fmt.Sprintf("_ %s %s _", e.Nick, e.Arguments[1]),
+                ts: time.Now(),
+            }
+            dis.Broadcast(ev)
+        }
+    })
 }
 
 
