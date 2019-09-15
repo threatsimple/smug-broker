@@ -1,13 +1,6 @@
 #!/bin/sh
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
-. $DIR/secrets.config
-
-echo ./build/smug \
-    -slack-token="$slacktok" -slack-channel="$slackchan" \
-    -irc-server="$ircserver" -irc-channel="$ircchan" -irc-nick="$ircnick"
-
+. ./secrets.config
 
 ./build/smug \
     -slack-token="$slacktok" -slack-channel="$slackchan" \

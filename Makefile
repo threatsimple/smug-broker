@@ -1,7 +1,6 @@
 
 default: build/smug
 
-
 setuplocal:
 	mkdir -p build/tmp
 
