@@ -2,48 +2,43 @@
 
 
 [[projects]]
-  digest = "1:e62657cca9badaa308d86e7716083e4c5933bb78e30a17743fc67f50be26f6f4"
   name = "github.com/gorilla/websocket"
   packages = ["."]
-  pruneopts = "UT"
   revision = "c3e18be99d19e6b3e8f1559eea2c161a665c4b6b"
   version = "v1.4.1"
 
 [[projects]]
-  digest = "1:3b68aaa159109450b5c0c79e40a02347db7ceb10bb8758687898f7e57d355cf7"
+  name = "github.com/mvdan/xurls"
+  packages = ["."]
+  revision = "e52e821cbfe8fe163ff6f8628ab5869b11fc05af"
+  version = "v2.0.0"
+
+[[projects]]
   name = "github.com/nlopes/slack"
   packages = [
     ".",
     "internal/errorsx",
     "internal/timex",
-    "slackutilsx",
+    "slackutilsx"
   ]
-  pruneopts = "UT"
   revision = "1af34b6bda3d43878255fff7bd2884ea0c23295e"
   version = "v0.6.0"
 
 [[projects]]
-  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
   name = "github.com/pkg/errors"
   packages = ["."]
-  pruneopts = "UT"
   revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
   version = "v0.8.1"
 
 [[projects]]
-  digest = "1:d54012310bade386dd6c887dd5c238d41231144bd3e7e2945237711b3336317e"
   name = "github.com/thoj/go-ircevent"
   packages = ["."]
-  pruneopts = "UT"
   revision = "5063e5f26097f6423c9de665079347c9473788da"
   version = "0.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = [
-    "github.com/nlopes/slack",
-    "github.com/thoj/go-ircevent",
-  ]
+  inputs-digest = "3f182dbab51a9d1968c469c9f1742a9d52c935954a13a7eb328ec3480b1bd2b3"
   solver-name = "gps-cdcl"
   solver-version = 1

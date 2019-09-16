@@ -6,7 +6,6 @@ import "time"
 type Broker interface {
     Name() string
     Publish(*Event)
-    // Run(*Dispatcher)
 }
 
 

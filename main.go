@@ -3,10 +3,14 @@ package main
 import (
     "flag"
     "fmt"
+    "log"
     "time"
 
     smug "github.com/nod/smug/smug"
 )
+
+
+var version string
 
 
 type SlackOpts struct {
@@ -41,18 +45,37 @@ func parseIrcOpts() *IrcOpts {
 }
 
 
+type ReadThisOpts struct {
+    apibase string
+    authcode string
+    prefix string
+}
+
+
+func parseReadThisOpts() *ReadThisOpts {
+    opts := &ReadThisOpts{}
+    flag.StringVar(&opts.apibase, "rt-api", "", "readthis api base url")
+    flag.StringVar(&opts.authcode, "rt-auth", "", "readthis auth code")
+    flag.StringVar(&opts.prefix, "rt-prefix", "", "readthis prefix trigger")
+    return opts
+}
+
+
 type Opts struct {
     irc *IrcOpts
     slack *SlackOpts
+    rt *ReadThisOpts
 }
 
 
 func parseOpts() *Opts {
     iopts := parseIrcOpts()
     sopts := parseSlackOpts()
+    rtopts := parseReadThisOpts()
     opts := &Opts{
         irc: iopts,
         slack: sopts,
+        rt: rtopts,
     }
     flag.Parse()
     return opts
@@ -60,25 +83,31 @@ func parseOpts() *Opts {
 
 
 func main() {
+    log.Printf("starting smug ver:%s", version)
     dispatcher := &smug.CentralDispatch{}
 
     opts := parseOpts()
 
+    // slack setup
     sb := &smug.SlackBroker{}
     sb.Setup(opts.slack.token, opts.slack.channel)
     go sb.Run(dispatcher)
     dispatcher.AddBroker(sb)
 
+    // irc
     ib := &smug.IrcBroker{}
-    fmt.Println("server", opts.irc.server)
-    fmt.Println("chan", opts.irc.channel)
-    fmt.Println("nick", opts.irc.nick)
-    ib.Setup(opts.irc.server, opts.irc.channel, opts.irc.nick)
+    ib.Setup(
+        opts.irc.server,
+        opts.irc.channel,
+        opts.irc.nick,
+        fmt.Sprintf("%s-%s", "smug", version),
+    )
     go ib.Run(dispatcher)
     dispatcher.AddBroker(ib)
 
-    time.Sleep(3 * time.Second)
-    ib.Put("manana na")
+    rtb := &smug.ReadThisBroker{}
+    rtb.Setup(opts.rt.apibase, opts.rt.prefix, opts.rt.authcode)
+    dispatcher.AddBroker(rtb)
 
     // just loop here for now so others can run
     for true {
@@ -86,5 +115,4 @@ func main() {
     }
 
 }
-
 

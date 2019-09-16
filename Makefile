@@ -1,4 +1,6 @@
 
+VER=0.0.1
+
 default: build/smug
 
 setuplocal:
@@ -8,7 +10,7 @@ cleanuplocal:
 	rm -rf build
 
 build/smug: setuplocal main.go
-	go build -o build/smug main.go
+	go build -ldflags "-X main.version=$(VER)" -o build/smug main.go
 
 run: build/smug
 	./bin/run_local

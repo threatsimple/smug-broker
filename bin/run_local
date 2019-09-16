@@ -4,4 +4,6 @@
 
 ./build/smug \
     -slack-token="$slacktok" -slack-channel="$slackchan" \
-    -irc-server="$ircserver" -irc-channel="$ircchan" -irc-nick="$ircnick"
+    -irc-server="$ircserver" -irc-channel="$ircchan" -irc-nick="$ircnick" \
+    -rt-api="$rtapi" -rt-auth="$rtauth" -rt-prefix="$rtprefix"
+

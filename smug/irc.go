@@ -3,30 +3,40 @@ package smug
 import (
     "crypto/tls"
     "fmt"
+    "log"
     "time"
 
     libirc "github.com/thoj/go-ircevent"
 )
 
+
 type IrcBroker struct {
     conn *libirc.Connection
     channel string
     nick string
+    botname string
     prefix string
     server string
 }
+
 
 func (ib *IrcBroker) Name() string {
     return fmt.Sprintf("irc-%s-%s-as-%s", ib.server, ib.channel, ib.nick)
 }
 
-// args [server, channel, nick]
+
+// args [server, channel, nick, botname]
 func (ib *IrcBroker) Setup(args ...string) {
     ib.server = args[0]
     ib.channel = args[1]
     ib.nick = args[2]
-    ib.conn = libirc.IRC(ib.nick, "smug")
-    ib.conn.VerboseCallbackHandler = true
+    if len(args) > 3 {
+        ib.botname = args[3]
+    } else {
+        ib.botname = "smug"
+    }
+    ib.conn = libirc.IRC(ib.nick, ib.botname)
+    // ib.conn.VerboseCallbackHandler = true
     ib.conn.UseTLS = true  // XXX should be a param
     if ib.conn.UseTLS {
         ib.conn.TLSConfig = &tls.Config{InsecureSkipVerify: true} // XXX
@@ -34,13 +44,14 @@ func (ib *IrcBroker) Setup(args ...string) {
     ib.conn.AddCallback(
         "001",
         func(e *libirc.Event) {
+            log.Printf("irc joining %s / %s", ib.server, ib.channel)
             ib.conn.Join(ib.channel)
-            ib.Put("hi. sup?")
+            ib.Put(fmt.Sprintf("%s online", ib.botname))
         } )
     // ib.conn.AddCallback("366", func(e *irc.Event) { }) // ignore end of names
     err := ib.conn.Connect(ib.server)
     if err != nil {
-        fmt.Printf("ERR %s", err)
+        log.Printf("ERR %s", err)
         ib.conn = nil // error'd here, set this connection to nil XXX
     }
 }

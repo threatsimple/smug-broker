@@ -4,12 +4,13 @@ package smug
 import (
     "fmt"
     "log"
-    "os"
     "strings"
     "time"
 
     libsl "github.com/nlopes/slack"
 )
+
+// logger := log.New(os.Stdout, "slack: ", log.Lshortfile|log.LstdFlags)
 
 
 type SlackUser struct {
@@ -64,6 +65,7 @@ func (sb *SlackBroker) Name() string {
     return fmt.Sprintf("slack-%s", sb.channel)
 }
 
+
 // args [token, channel]
 func (sb *SlackBroker) Setup(args ...string) {
     sb.usercache = &SlackUserCache{}
@@ -72,30 +74,29 @@ func (sb *SlackBroker) Setup(args ...string) {
     sb.channel = args[1]
     sc := libsl.New(
         sb.token,
-        libsl.OptionDebug(true),
-        libsl.OptionLog(log.New(
-            os.Stdout,
-            "smugbot: ",
-            log.Lshortfile|log.LstdFlags ),
-        ),
+        // libsl.OptionDebug(true),
+        // libsl.OptionLog( log.Logger ),
+            //log.New(
+            //os.Stdout,
+            //"slack: ",
+            //log.Lshortfile|log.LstdFlags ),
+        //),
     )
     sb.api = sc
     sb.rtm = sb.api.NewRTM()
-
     channels, err := sb.api.GetChannels(false)
     if err != nil {
-		fmt.Printf("%s\n", err)
+		log.Printf("ERR get channels %+v\n", err)
 		return
 	}
     for _, channel := range channels {
         if channel.Name == sb.channel {
             sb.chanid = channel.ID
-            fmt.Println("Channel is ", channel.Name, " with id:", sb.chanid)
             break
         }
 	}
     if sb.chanid == "" {
-        fmt.Println("channel not found.  case?")
+        log.Printf("ERR channel not found (%s)", sb.channel)
         return
     }
 
@@ -128,14 +129,14 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
         switch e := msg.Data.(type) {
         case *libsl.HelloEvent:
             // ignore Hello
+        case *libsl.UserTypingEvent:
+            // ignore typing
         case *libsl.ConnectedEvent:
-            fmt.Println("joining chan:", sb.channel)
-            sb.Put("hi")
+            log.Printf("joining chan: %s", sb.channel)
         case *libsl.MessageEvent:
             // smugbot: 2019/09/14 08:47:44 websocket_managed_conn.go:369:
             // Incoming Event:
             // {"client_msg_id":"ed722fbc-5b37-4f78-9981-e3c9ce5c85a1","suppress_notification":false,"type":"message","text":"test","user":"U6CRHMXK4","team":"T6CRHMX5G","user_team":"T6CRHMX5G","source_team":"T6CRHMX5G","channel":"C6MR9CBGR","event_ts":"1568468854.004200","ts":"1568468854.004200"}
-            fmt.Printf("XYZXXX Message: %+v\n", e)
             if e.BotID == "" {
                 outmsgs := []string{e.Text}
                 if len(e.Files) > 0 {
@@ -153,17 +154,17 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
                 dis.Broadcast(ev)
             }
         case *libsl.PresenceChangeEvent:
-            fmt.Printf("Presence Change: %v\n", e)
+            log.Printf("Presence Change: %v\n", e)
         case *libsl.LatencyReport:
-            fmt.Printf("Current latency: %v\n", e.Value)
+            log.Printf("Current latency: %v\n", e.Value)
         case *libsl.RTMError:
-            fmt.Printf("Error: %s\n", e.Error())
+            log.Printf("Error: %s\n", e.Error())
         case *libsl.InvalidAuthEvent:
-            fmt.Printf("Invalid credentials")
+            log.Printf("Invalid credentials")
             return
         default:
             // Ignore other events..
-            // fmt.Printf("Unexpected: %v\n", msg.Data)
+            log.Printf("Unexpected: %v\n", msg.Data)
         }
     }
 }
