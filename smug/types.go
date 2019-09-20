@@ -22,6 +22,7 @@ type Event struct {
     Nick string
     Avatar string
     Text string
+    RawText string
     ts time.Time
 }
 
