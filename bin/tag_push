@@ -1,0 +1,11 @@
+#!/bin/bash
+
+verstr=$(cat VERSION)
+
+changes=$(git diff)
+
+if [ -ne $changes]; then
+    git tag -a "v${verstr}"
+    git push --tags
+fi
+
