@@ -91,8 +91,8 @@ func (sb *SlackBroker) Setup(args ...string) {
     channels, err := sb.api.GetChannels(false)
     useridentity,err := sb.api.GetUserIdentity()
     if err != nil {} // should never be nil..  what's happening!?
-    up := sb.api.GetUserProfile(useridentity.User.ID, false)
-    sb.mybotid = up.BotID
+    uprof,err := sb.api.GetUserProfile(useridentity.User.ID, false)
+    sb.mybotid = uprof.BotID
     if err != nil {
 		log.Printf("ERR get channels %+v\n", err)
 		return
@@ -145,7 +145,8 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
             // smugbot: 2019/09/14 08:47:44 websocket_managed_conn.go:369:
             // Incoming Event:
             // {"client_msg_id":"ed722fbc-5b37-4f78-9981-e3c9ce5c85a1","suppress_notification":false,"type":"message","text":"test","user":"U6CRHMXK4","team":"T6CRHMX5G","user_team":"T6CRHMX5G","source_team":"T6CRHMX5G","channel":"C6MR9CBGR","event_ts":"1568468854.004200","ts":"1568468854.004200"}
-            if e.BotID != sb.mybotid && e.ChannelID == sb.channid {
+            fmt.Printf("SLACK: %+v", e)
+            if e.BotID != sb.mybotid && e.Channel == sb.chanid {
                 outmsgs := []string{e.Text}
                 if len(e.Files) > 0 {
                     for _,f := range e.Files {

@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+# input should be a  x.y.z version string
+
+from sys import argv
+
+
+if len(argv) != 2:
+    raise SystemExit("usage: {} <filename of version file>".format(args[0]))
+
+with open(argv[1],'r') as f:
+    in_ver = f.read().strip()
+if not in_ver:
+    in_ver = '0.0.0'
+major,minor,build = [int(x) for x in in_ver.strip().split('.')]
+
+with open(argv[1],'w') as f:
+    out_ver = '{}.{}.{}'.format(major,minor,build+1)
+    f.write(out_ver)
+    print(out_ver)
+
