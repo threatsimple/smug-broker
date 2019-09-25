@@ -90,7 +90,11 @@ func (sb *SlackBroker) Setup(args ...string) {
     sb.rtm = sb.api.NewRTM()
     channels, err := sb.api.GetChannels(false)
     useridentity,err := sb.api.GetUserIdentity()
-    if err != nil {} // should never be nil..  what's happening!?
+    if err != nil {
+        // should never be nil..  what's happening!?
+		fmt.Errorf("ERR getting user identity %+v\n", err)
+        return
+    }
     uprof,err := sb.api.GetUserProfile(useridentity.User.ID, false)
     sb.mybotid = uprof.BotID
     if err != nil {
