@@ -3,11 +3,26 @@ package main
 import (
     "flag"
     "fmt"
-    "log"
+    "os"
     "time"
+
+    log "github.com/sirupsen/logrus"
 
     smug "github.com/nod/smug/smug"
 )
+
+
+func init() {
+    // Log as JSON instead of the default ASCII formatter.
+    log.SetFormatter(&log.JSONFormatter{})
+
+    // Output to stdout instead of the default stderr
+    // Can be any io.Writer, see below for File example
+    log.SetOutput(os.Stdout)
+
+    // Only log the warning severity or above.
+    log.SetLevel(log.WarnLevel)
+}
 
 
 var version string
@@ -61,10 +76,25 @@ func parseReadThisOpts() *ReadThisOpts {
 }
 
 
+type RuntimeOpts struct {
+    loglevel string
+}
+
+
+func parseRuntimeOpts() *RuntimeOpts {
+    opts := &RuntimeOpts{
+        loglevel: "warning",
+    }
+    flag.StringVar(&opts.loglevel, "loglevel", "warning", "logging level")
+    return opts
+}
+
+
 type Opts struct {
     irc *IrcOpts
     slack *SlackOpts
     rt *ReadThisOpts
+    runtime *RuntimeOpts
 }
 
 
@@ -72,10 +102,12 @@ func parseOpts() *Opts {
     iopts := parseIrcOpts()
     sopts := parseSlackOpts()
     rtopts := parseReadThisOpts()
+    runopts := parseRuntimeOpts()
     opts := &Opts{
         irc: iopts,
         slack: sopts,
         rt: rtopts,
+        runtime: runopts,
     }
     flag.Parse()
     return opts

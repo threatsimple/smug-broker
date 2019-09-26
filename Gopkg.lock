@@ -8,6 +8,12 @@
   version = "v1.4.1"
 
 [[projects]]
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
+
+[[projects]]
   name = "github.com/mvdan/xurls"
   packages = ["."]
   revision = "e52e821cbfe8fe163ff6f8628ab5869b11fc05af"
@@ -31,14 +37,26 @@
   version = "v0.8.1"
 
 [[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "839c75faf7f98a33d445d181f3018b5c3409a45e"
+  version = "v1.4.2"
+
+[[projects]]
   name = "github.com/thoj/go-ircevent"
   packages = ["."]
   revision = "5063e5f26097f6423c9de665079347c9473788da"
   version = "0.2"
 
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  revision = "2837fb4f24fee082b8c39b1a6dc9e0ed9f3fbd4f"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3f182dbab51a9d1968c469c9f1742a9d52c935954a13a7eb328ec3480b1bd2b3"
+  inputs-digest = "c0602b39c20d3f769762c9742018926fc0fada95c534f1ab2d551af09b2763fa"
   solver-name = "gps-cdcl"
   solver-version = 1

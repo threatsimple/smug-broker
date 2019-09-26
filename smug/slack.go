@@ -6,11 +6,12 @@ package smug
 
 import (
     "fmt"
-    "log"
+    "regexp"
     "strings"
     "time"
 
     libsl "github.com/nlopes/slack"
+    log "github.com/sirupsen/logrus"
 )
 
 // logger := log.New(os.Stdout, "slack: ", log.Lshortfile|log.LstdFlags)
@@ -42,7 +43,6 @@ func (suc *SlackUserCache) Username(sb *SlackBroker, ukey string) string {
             Avatar: user.Profile.Image72,
         }
     }
-    fmt.Println(suc.users[ukey])
     return user.Name
 }
 
@@ -57,6 +57,7 @@ type SlackBroker struct {
     channel string
     token string
     mybotid string
+    re_uids *regexp.Regexp
 }
 
 
@@ -70,15 +71,43 @@ func (sb *SlackBroker) Name() string {
 }
 
 
-// args [token, channel]
-func (sb *SlackBroker) Setup(args ...string) {
+func (sb *SlackBroker) SetupInternals() {
     sb.usercache = &SlackUserCache{}
     sb.usercache.users = make(map[string]*SlackUser)
+    sb.re_uids = regexp.MustCompile(`<@(U\w+)>`) // get sub ids in msgs
+}
+
+
+func (sb *SlackBroker) ConvertUserRefs(s string) string {
+    matches := sb.re_uids.FindAllStringSubmatchIndex(s,-1)
+    // will contain a uniq set of uids mentioned
+    uids := make(map[string]bool)
+    for i := len(matches)-1; i >= 0; i-- {
+        // start,stop,sub0,sublen := matches[i]
+        m := matches[i]
+        uid := s[m[2]:m[3]]
+        if ! uids[uid] { uids[uid] = true }
+    }
+    // now iterate over uids and replace them all
+    for u,_ := range uids {
+        s = strings.ReplaceAll(
+            s,
+            fmt.Sprintf("<@%s>",u),
+            sb.CachedUsername(u),
+        )
+    }
+    return s
+}
+
+
+// args [token, channel]
+func (sb *SlackBroker) Setup(args ...string) {
+    sb.SetupInternals()
     sb.token = args[0]
     sb.channel = args[1]
     sc := libsl.New(
         sb.token,
-        // libsl.OptionDebug(true),
+        libsl.OptionDebug(true),
         // libsl.OptionLog( log.Logger ),
             //log.New(
             //os.Stdout,
@@ -88,19 +117,31 @@ func (sb *SlackBroker) Setup(args ...string) {
     )
     sb.api = sc
     sb.rtm = sb.api.NewRTM()
-    channels, err := sb.api.GetChannels(false)
-    useridentity,err := sb.api.GetUserIdentity()
+    authtest,_ := sb.api.AuthTest() // gets our identity from slack api
+    myuid := authtest.UserID
+    myuser, err := sb.api.GetUserInfo(myuid)
+    if err != nil {
+        log.Printf("ERR occurred %+v", err)
+    }
+    sb.mybotid = myuser.Profile.BotID
+
+//GOT USER ID HAS TO GET USERIDENTIFY AND USER PROFILE TO GET BOTID
+
+    /*
+    botinfo, err := sb.api.GetBotInfo("")
+    log.Printf("UUUU bot:%+v err:%+v", botinfo, err)
     if err != nil {
         // should never be nil..  what's happening!?
-		fmt.Errorf("ERR getting user identity %+v\n", err)
-        return
+		log.Printf("ERR getting bot identity %+v\n", err)
     }
-    uprof,err := sb.api.GetUserProfile(useridentity.User.ID, false)
-    sb.mybotid = uprof.BotID
+    sb.mybotid = botinfo.ID
+    log.Printf("SETTING BOTID  %s", sb.mybotid)
     if err != nil {
 		log.Printf("ERR get channels %+v\n", err)
 		return
 	}
+	*/
+    channels, _ := sb.api.GetChannels(false)
     for _, channel := range channels {
         if channel.Name == sb.channel {
             sb.chanid = channel.ID
@@ -132,6 +173,11 @@ func (sb *SlackBroker) Publish(ev *Event) {
 }
 
 
+func ConvertUserRefs(input string) {
+
+}
+
+
 func (sb *SlackBroker) Run(dis Dispatcher) {
     if sb.rtm == nil {
         // raise some error here XXX TODO
@@ -141,6 +187,7 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
         switch e := msg.Data.(type) {
         case *libsl.HelloEvent:
             // ignore Hello
+            fmt.Printf("SLACK HELLO: %+v", msg)
         case *libsl.UserTypingEvent:
             // ignore typing
         case *libsl.ConnectedEvent:
@@ -158,10 +205,12 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
                             fmt.Sprintf("%s(%s)",f.Name,f.URLPrivate))
                     }
                 }
+                outstr := strings.Join(outmsgs, " ")
                 ev := &Event{
                     Origin: sb,
                     Nick: sb.CachedUsername(e.User),
-                    Text: strings.Join(outmsgs, " "),
+                    RawText: outstr,
+                    Text: sb.ConvertUserRefs(outstr),
                     ts: time.Now(),
                 }
                 dis.Broadcast(ev)

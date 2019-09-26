@@ -1,7 +1,6 @@
 
 
 default: build/smug
-
 VER =
 ifndef VER
 	VER := $(shell ./bin/incr_build ./VERSION)
@@ -31,6 +30,7 @@ clean: setuplocal
 	go clean
 	rm -rf build
 
+test: export TMPDIR=build/tmp
 test: setuplocal
 	go test -v ./...
 
