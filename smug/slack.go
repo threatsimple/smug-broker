@@ -125,22 +125,6 @@ func (sb *SlackBroker) Setup(args ...string) {
     }
     sb.mybotid = myuser.Profile.BotID
 
-//GOT USER ID HAS TO GET USERIDENTIFY AND USER PROFILE TO GET BOTID
-
-    /*
-    botinfo, err := sb.api.GetBotInfo("")
-    log.Printf("UUUU bot:%+v err:%+v", botinfo, err)
-    if err != nil {
-        // should never be nil..  what's happening!?
-		log.Printf("ERR getting bot identity %+v\n", err)
-    }
-    sb.mybotid = botinfo.ID
-    log.Printf("SETTING BOTID  %s", sb.mybotid)
-    if err != nil {
-		log.Printf("ERR get channels %+v\n", err)
-		return
-	}
-	*/
     channels, _ := sb.api.GetChannels(false)
     for _, channel := range channels {
         if channel.Name == sb.channel {
