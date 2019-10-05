@@ -145,7 +145,7 @@ func (sb *SlackBroker) Put(msg string) {
 }
 
 
-func (sb *SlackBroker) Publish(ev *Event) {
+func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
     sb.api.PostMessage(
         sb.chanid,
         libsl.MsgOptionText(ev.Text, false),

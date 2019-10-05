@@ -76,7 +76,7 @@ func (rtb *ReadThisBroker) ParseText(line string) (string, string) {
 
 // since all messages go through the Publish from the Dispatcher we can just
 // hook here to look for our read this messages
-func (rtb *ReadThisBroker) Publish(ev *Event) {
+func (rtb *ReadThisBroker) Publish(ev *Event, dis Dispatcher) {
     found,_ := rtb.ParseText(ev.Text)
     if len(found) > 0 {
         rtb.Submit(

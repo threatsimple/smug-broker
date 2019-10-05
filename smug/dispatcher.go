@@ -12,7 +12,7 @@ type CentralDispatch struct {
 func (cd *CentralDispatch) Broadcast(ev *Event) {
     for _,b := range cd.brokers {
         if ev.Origin != b {
-            b.Publish(ev)
+            b.Publish(ev, cd)
         }
     }
 }
