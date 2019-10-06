@@ -125,6 +125,7 @@ func main() {
     sb.Setup(opts.slack.token, opts.slack.channel)
     go sb.Run(dispatcher)
     dispatcher.AddBroker(sb)
+    defer dispatcher.RemoveBroker(sb)
 
     // irc
     ib := &smug.IrcBroker{}
@@ -136,14 +137,21 @@ func main() {
     )
     go ib.Run(dispatcher)
     dispatcher.AddBroker(ib)
+    defer dispatcher.RemoveBroker(ib)
+
+    lc := &smug.LocalCmdBroker{}
+    lc.Setup("smug", "", version)
+    dispatcher.AddBroker(lc)
+    defer dispatcher.RemoveBroker(lc)
 
     rtb := &smug.ReadThisBroker{}
     rtb.Setup(opts.rt.apibase, opts.rt.prefix, opts.rt.authcode)
     dispatcher.AddBroker(rtb)
+    defer dispatcher.RemoveBroker(rtb)
 
     // just loop here for now so others can run
     for true {
-        time.Sleep(200 * time.Millisecond)
+        time.Sleep(400 * time.Millisecond)
     }
 
 }
