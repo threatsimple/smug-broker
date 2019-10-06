@@ -1,43 +1,46 @@
 package smug
 
+
 import (
+    "fmt"
     "testing"
 )
 
+
+type TestDispatch struct {
+    lastbroadcast *Event
+}
+
+
+// our mock Broadcast captures the last event broadcast to it in the
+// lastbroadcast member. this is not threadsafe in any way
+func (td *TestDispatch) Broadcast(ev *Event) {
+    td.lastbroadcast = ev
+}
+func (td *TestDispatch) AddBroker(Broker) {}
+func (td *TestDispatch) RemoveBroker(Broker) error { return fmt.Errorf("wat?") }
+func (td *TestDispatch) NumBrokers() int { return 0 }
+
+
 func TestLocalVersionCommand(t *testing.T) {
+    myver := "99.99.99"
+    vc := &VersionCommand{Version:myver}
+    td := &TestDispatch{}
 
-
-BROKEN WRITE THIS FOR LOCAL COMMANDS
-
-    lc := &SlackBroker{}
-    sb.SetupInternals()
-    sb.usercache.users["U6CRHMXK4"] = &SlackUser{
-        Id:"U6CRHMXK4",
-        Nick:"aaaa",
-        Avatar:"",
+    // test our version command match
+    if ! vc.match(&Event{Text:"..version yo"}) {
+        t.Errorf("did not match on version command")
     }
-    sb.usercache.users["U54321"] = &SlackUser{
-        Id: "U54321",
-        Nick: "boy",
-        Avatar:"",
-    }
-    new_txt := sb.ConvertUserRefs(" <@U6CRHMXK4> congradulations!!!")
-    exp_txt := " aaaa congradulations!!!"
-    if new_txt !=  exp_txt {
+
+    // now test the version string returns properly
+    e := &Event{}
+    vc.exec(e,e,td)
+    if td.lastbroadcast.Text != fmt.Sprintf("version: %s",myver) {
         t.Errorf(
-            "bogus slack nick conversion. got:[%s] wanted: [%s]",
-            new_txt,
-            exp_txt,
-        )
-    }
-    new_txt = sb.ConvertUserRefs("<@U6CRHMXK4> dude <@U54321>")
-    exp_txt = "aaaa dude boy"
-    if new_txt != exp_txt {
-        t.Errorf(
-            "bogus slack nick conversion. got:[%s] wanted: [%s]",
-            new_txt,
-            exp_txt,
-        )
+            "version not returned.  expected: version: %s\ngot %s",
+            myver,
+            td.lastbroadcast.Text )
     }
 }
+
 
