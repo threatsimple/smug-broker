@@ -24,11 +24,12 @@ func (td *TestDispatch) NumBrokers() int { return 0 }
 
 func TestLocalVersionCommand(t *testing.T) {
     myver := "99.99.99"
-    vc := &VersionCommand{Version:myver}
+    vc := &VersionCommand{Version:myver, log:NewLogger("testvc")}
     td := &TestDispatch{}
 
     // test our version command match
-    if ! vc.match(&Event{Text:"..version yo"}) {
+    testEv := &Event{Text:"..version yo"}
+    if ! vc.match(testEv) {
         t.Errorf("did not match on version command")
     }
 

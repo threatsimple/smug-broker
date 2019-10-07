@@ -64,7 +64,11 @@ func (ib *IrcBroker) Put(msg string) {
 
 
 func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
-    ib.Put(fmt.Sprintf("|%s| %s", ev.Nick, ev.Text))
+    if ev.IsCmdOutput {
+        ib.Put(fmt.Sprintf("%s", ev.Text))
+    } else {
+        ib.Put(fmt.Sprintf("|%s| %s", ev.Nick, ev.Text))
+    }
 }
 
 

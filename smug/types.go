@@ -18,6 +18,7 @@ type Dispatcher interface {
 
 
 type Event struct {
+    IsCmdOutput bool
     Origin Broker
     Nick string
     Avatar string

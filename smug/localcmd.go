@@ -27,7 +27,10 @@ const Prefix = ".."
  */
 
 
+const opVer = "version"
+
 type VersionCommand struct {
+    log *Logger
     Version string
 }
 
@@ -42,13 +45,17 @@ func (vc *VersionCommand) exec(oldE *Event, newE *Event, dis Dispatcher) {
 
 
 func (vc *VersionCommand) help() string {
-    return fmt.Sprintf("%sversion - returns version of smug", Prefix)
+    return fmt.Sprintf("%s%s - returns version of smug", Prefix, opVer)
 }
 
 
 func (vc *VersionCommand) match(ev *Event) bool {
-    opstr := fmt.Sprintf("%sversion ", Prefix)
-    if strings.HasPrefix(ev.Text, opstr) { return true }
+    opstr := fmt.Sprintf("%s%s", Prefix, opVer)
+    vc.log.Debugf("version matching %s to %s", opstr, ev.Text)
+    if strings.HasPrefix(ev.Text, opstr) {
+        vc.log.Debugf("version found a match")
+        return true
+    }
     return false
 }
 
@@ -81,13 +88,14 @@ func (lcb *LocalCmdBroker) Setup(args ...string) {
     lcb.botNick = args[0]
     lcb.botAvatar = args[1]
     lcb.prefixCmds = []Command{
-        &VersionCommand{Version:args[2]},
+        &VersionCommand{Version:args[2], log:lcb.log},
     }
 }
 
 
 func (lcb *LocalCmdBroker) NewEvent() *Event {
     return &Event{
+        IsCmdOutput: true,
         Origin: lcb,
         Nick: lcb.botNick,
         Avatar: lcb.botAvatar,
@@ -101,13 +109,17 @@ func (lcb *LocalCmdBroker) NewEvent() *Event {
 func (lcb *LocalCmdBroker) Publish(ev *Event, dis Dispatcher) {
     // short circuit if not prefixed by cmd prefix
     // there may come a time when we have embedded commands
+    lcb.log.Debugf("inside Publish with: %s", ev.Text)
     if len(ev.Text) >= len(Prefix) && ev.Text[:len(Prefix)] == Prefix {
+        lcb.log.Debugf("inside Publish, matched")
         for _,cmd := range lcb.prefixCmds {
             if cmd.match(ev) {
                 cmd.exec(ev, lcb.NewEvent(), dis)
                 return
             }
         }
+    } else {
+        lcb.log.Debugf( "no Publish ")
     }
 }
 
