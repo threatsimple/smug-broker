@@ -2,7 +2,6 @@ package smug
 
 import (
     "fmt"
-    "log"
     "strings"
     "time"
 )
@@ -61,6 +60,7 @@ func (vc *VersionCommand) match(ev *Event) bool {
  */
 
 type LocalCmdBroker struct {
+    log *Logger
     prefixCmds []Command
     botNick string
     botAvatar string
@@ -74,8 +74,9 @@ func (lcb *LocalCmdBroker) Name() string {
 
 // args [botnick, botavatar, version string]
 func (lcb *LocalCmdBroker) Setup(args ...string) {
+    lcb.log = NewLogger("locmd")
     if len(args) != 3 {
-        log.Fatal("command broker thrown with too few args")
+        lcb.log.Fatal("command broker thrown with too few args")
     }
     lcb.botNick = args[0]
     lcb.botAvatar = args[1]
@@ -100,7 +101,7 @@ func (lcb *LocalCmdBroker) NewEvent() *Event {
 func (lcb *LocalCmdBroker) Publish(ev *Event, dis Dispatcher) {
     // short circuit if not prefixed by cmd prefix
     // there may come a time when we have embedded commands
-    if ev.Text[:len(Prefix)] == Prefix {
+    if len(ev.Text) >= len(Prefix) && ev.Text[:len(Prefix)] == Prefix {
         for _,cmd := range lcb.prefixCmds {
             if cmd.match(ev) {
                 cmd.exec(ev, lcb.NewEvent(), dis)
@@ -108,7 +109,6 @@ func (lcb *LocalCmdBroker) Publish(ev *Event, dis Dispatcher) {
             }
         }
     }
-
 }
 
 

@@ -5,12 +5,19 @@ import "fmt"
 
 
 type CentralDispatch struct {
+    log *Logger
     brokers []Broker
+}
+
+
+func NewCentralDispatch() *CentralDispatch {
+    return &CentralDispatch{log: NewLogger("dispatch")}
 }
 
 
 func (cd *CentralDispatch) Broadcast(ev *Event) {
     for _,b := range cd.brokers {
+        cd.log.Debugf("BROADCASTING to %s", b.Name())
         if ev.Origin != b {
             b.Publish(ev, cd)
         }

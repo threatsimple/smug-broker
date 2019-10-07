@@ -3,7 +3,6 @@ package smug
 import (
     "crypto/tls"
     "fmt"
-    "log"
     "time"
 
     libirc "github.com/thoj/go-ircevent"
@@ -11,6 +10,7 @@ import (
 
 
 type IrcBroker struct {
+    log *Logger
     conn *libirc.Connection
     channel string
     nick string
@@ -35,6 +35,7 @@ func (ib *IrcBroker) Setup(args ...string) {
     } else {
         ib.botname = "smug"
     }
+    ib.log = NewLogger(ib.Name())
     ib.conn = libirc.IRC(ib.nick, ib.botname)
     // ib.conn.VerboseCallbackHandler = true
     ib.conn.UseTLS = true  // XXX should be a param
@@ -44,14 +45,14 @@ func (ib *IrcBroker) Setup(args ...string) {
     ib.conn.AddCallback(
         "001",
         func(e *libirc.Event) {
-            log.Printf("irc joining %s / %s", ib.server, ib.channel)
+            ib.log.Infof("irc joining %s / %s", ib.server, ib.channel)
             ib.conn.Join(ib.channel)
             ib.Put(fmt.Sprintf("%s online", ib.botname))
         } )
     // ib.conn.AddCallback("366", func(e *irc.Event) { }) // ignore end of names
     err := ib.conn.Connect(ib.server)
     if err != nil {
-        log.Printf("ERR %s", err)
+        ib.log.Errorf("ERR %s", err)
         ib.conn = nil // error'd here, set this connection to nil XXX
     }
 }

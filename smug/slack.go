@@ -11,10 +11,7 @@ import (
     "time"
 
     libsl "github.com/nlopes/slack"
-    log "github.com/sirupsen/logrus"
 )
-
-// logger := log.New(os.Stdout, "slack: ", log.Lshortfile|log.LstdFlags)
 
 
 type SlackUser struct {
@@ -48,6 +45,7 @@ func (suc *SlackUserCache) Username(sb *SlackBroker, ukey string) string {
 
 
 type SlackBroker struct {
+    log *Logger
     // components from slack lib
     api *libsl.Client
     rtm *libsl.RTM
@@ -72,6 +70,7 @@ func (sb *SlackBroker) Name() string {
 
 
 func (sb *SlackBroker) SetupInternals() {
+    sb.log = NewLogger("slack")
     sb.usercache = &SlackUserCache{}
     sb.usercache.users = make(map[string]*SlackUser)
     sb.re_uids = regexp.MustCompile(`<@(U\w+)>`) // get sub ids in msgs
@@ -100,6 +99,18 @@ func (sb *SlackBroker) ConvertUserRefs(s string) string {
 }
 
 
+type SlackLogger struct {
+    *Logger
+}
+
+
+func (sl *SlackLogger) Output(lvl int, msg string) error {
+    sl.Info(msg)
+    return nil
+}
+
+
+
 // args [token, channel]
 func (sb *SlackBroker) Setup(args ...string) {
     sb.SetupInternals()
@@ -108,12 +119,7 @@ func (sb *SlackBroker) Setup(args ...string) {
     sc := libsl.New(
         sb.token,
         libsl.OptionDebug(true),
-        // libsl.OptionLog( log.Logger ),
-            //log.New(
-            //os.Stdout,
-            //"slack: ",
-            //log.Lshortfile|log.LstdFlags ),
-        //),
+        libsl.OptionLog(&SlackLogger{sb.log}),
     )
     sb.api = sc
     sb.rtm = sb.api.NewRTM()
@@ -121,7 +127,7 @@ func (sb *SlackBroker) Setup(args ...string) {
     myuid := authtest.UserID
     myuser, err := sb.api.GetUserInfo(myuid)
     if err != nil {
-        log.Printf("ERR occurred %+v", err)
+        sb.log.Warnf("ERR occurred %+v", err)
     }
     sb.mybotid = myuser.Profile.BotID
 
@@ -133,7 +139,7 @@ func (sb *SlackBroker) Setup(args ...string) {
         }
 	}
     if sb.chanid == "" {
-        log.Printf("ERR channel not found (%s)", sb.channel)
+        sb.log.Warnf("ERR channel not found (%s)", sb.channel)
         return
     }
 
@@ -157,11 +163,6 @@ func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
 }
 
 
-func ConvertUserRefs(input string) {
-
-}
-
-
 func (sb *SlackBroker) Run(dis Dispatcher) {
     if sb.rtm == nil {
         // raise some error here XXX TODO
@@ -171,16 +172,14 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
         switch e := msg.Data.(type) {
         case *libsl.HelloEvent:
             // ignore Hello
-            fmt.Printf("SLACK HELLO: %+v", msg)
         case *libsl.UserTypingEvent:
             // ignore typing
         case *libsl.ConnectedEvent:
-            log.Printf("joining chan: %s", sb.channel)
+            sb.log.Infof("joining chan: %s", sb.channel)
         case *libsl.MessageEvent:
             // smugbot: 2019/09/14 08:47:44 websocket_managed_conn.go:369:
             // Incoming Event:
             // {"client_msg_id":"ed722fbc-5b37-4f78-9981-e3c9ce5c85a1","suppress_notification":false,"type":"message","text":"test","user":"U6CRHMXK4","team":"T6CRHMX5G","user_team":"T6CRHMX5G","source_team":"T6CRHMX5G","channel":"C6MR9CBGR","event_ts":"1568468854.004200","ts":"1568468854.004200"}
-            fmt.Printf("SLACK: %+v", e)
             if e.BotID != sb.mybotid && e.Channel == sb.chanid {
                 outmsgs := []string{e.Text}
                 if len(e.Files) > 0 {
@@ -200,17 +199,17 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
                 dis.Broadcast(ev)
             }
         case *libsl.PresenceChangeEvent:
-            log.Printf("Presence Change: %v\n", e)
+            sb.log.Infof("Presence Change: %v\n", e)
         case *libsl.LatencyReport:
-            log.Printf("Current latency: %v\n", e.Value)
+            sb.log.Infof("Current latency: %v\n", e.Value)
         case *libsl.RTMError:
-            log.Printf("Error: %s\n", e.Error())
+            sb.log.Warnf("Error: %s\n", e.Error())
         case *libsl.InvalidAuthEvent:
-            log.Printf("Invalid credentials")
+            sb.log.Fatalf("Invalid credentials")
             return
         default:
             // Ignore other events..
-            log.Printf("Unexpected: %v\n", msg.Data)
+            sb.log.Infof("Unexpected: %v\n", msg.Data)
         }
     }
 }
