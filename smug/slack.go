@@ -178,6 +178,33 @@ func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
 }
 
 
+func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
+    sb.log.Debugf("SL MsgEv  %+v", e)
+    outmsgs := []string{e.Text}
+    if len(e.Files) > 0 {
+        for _,f := range e.Files {
+            outmsgs = append(outmsgs,
+                fmt.Sprintf("%s(%s)",f.Name,f.URLPrivate) )
+        }
+    }
+    if len(e.Attachments) > 0 {
+        for _,a := range e.Attachments {
+            outmsgs = append(outmsgs,
+                fmt.Sprintf("%s - %s", a.Title, a.ImageURL) )
+        }
+    }
+    outstr := strings.TrimSpace(strings.Join(outmsgs, " "))
+    ev := &Event{
+        Origin: sb,
+        Nick: sb.CachedUsername(e.User),
+        RawText: outstr,
+        Text: sb.ConvertUserRefs(outstr),
+        ts: time.Now(),
+    }
+    return ev
+}
+
+
 func (sb *SlackBroker) Run(dis Dispatcher) {
     if sb.rtm == nil {
         // raise some error here XXX TODO
@@ -196,21 +223,7 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
             // Incoming Event:
             // {"client_msg_id":"ed722fbc-5b37-4f78-9981-e3c9ce5c85a1","suppress_notification":false,"type":"message","text":"test","user":"U6CRHMXK4","team":"T6CRHMX5G","user_team":"T6CRHMX5G","source_team":"T6CRHMX5G","channel":"C6MR9CBGR","event_ts":"1568468854.004200","ts":"1568468854.004200"}
             if e.BotID != sb.mybotid && e.Channel == sb.chanid {
-                outmsgs := []string{e.Text}
-                if len(e.Files) > 0 {
-                    for _,f := range e.Files {
-                        outmsgs = append(outmsgs,
-                            fmt.Sprintf("%s(%s)",f.Name,f.URLPrivate))
-                    }
-                }
-                outstr := strings.Join(outmsgs, " ")
-                ev := &Event{
-                    Origin: sb,
-                    Nick: sb.CachedUsername(e.User),
-                    RawText: outstr,
-                    Text: sb.ConvertUserRefs(outstr),
-                    ts: time.Now(),
-                }
+                ev := sb.ParseToEvent(e)
                 dis.Broadcast(ev)
             }
         case *libsl.PresenceChangeEvent:
