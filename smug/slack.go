@@ -180,7 +180,7 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
             // smugbot: 2019/09/14 08:47:44 websocket_managed_conn.go:369:
             // Incoming Event:
             // {"client_msg_id":"ed722fbc-5b37-4f78-9981-e3c9ce5c85a1","suppress_notification":false,"type":"message","text":"test","user":"U6CRHMXK4","team":"T6CRHMX5G","user_team":"T6CRHMX5G","source_team":"T6CRHMX5G","channel":"C6MR9CBGR","event_ts":"1568468854.004200","ts":"1568468854.004200"}
-            if e.BotID != sb.mybotid && e.Channel == sb.chanid {
+            if e.Edited != nil && e.BotID != sb.mybotid && e.Channel == sb.chanid {
                 outmsgs := []string{e.Text}
                 if len(e.Files) > 0 {
                     for _,f := range e.Files {
