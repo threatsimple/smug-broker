@@ -1,7 +1,16 @@
+// broker: slack
+// provides our interface for consuming from, and publishing, to slack
+
+// NOTE ABOUT CREDENTIALS
+// this requires slack credentials to be created for your network and the bot to
+// be invited to the specific channel.
+// In particular, know that the slack api is wide open unless you go through the
+// motions of creating a bot specific access token.  That means private messages
+// can flow through this bot from the creating user and replies to that user,
+// regardless if the bot is privy to those conversations or not.
+
+
 package smug
-
-
-// 09:52:24 < smig> |marykarnes| congrats <@UHFUL9WUS> that sounds perfect
 
 
 import (
@@ -43,24 +52,66 @@ type SlackUser struct {
 
 type SlackUserCache struct {
     users map[string]*SlackUser
+    nicks map[string]*SlackUser
 }
 
 
-func (suc *SlackUserCache) Username(sb *SlackBroker, ukey string) string {
+func (suc *SlackUserCache) CacheUser(user *SlackUser) {
+    suc.users[user.Id] = user
+    suc.nicks[user.Nick] = user
+}
+
+
+func (suc *SlackUserCache) UserFromAPI(
+        sb *SlackBroker, ukey string) (*SlackUser,error) {
+    user, err := sb.api.GetUserInfo(ukey)
+    if err != nil {
+        return nil,fmt.Errorf("err fetching user from slack: %+v", err)
+    }
+    suser := &SlackUser{
+        Id: ukey,
+        Nick: user.Name,
+        Avatar: user.Profile.Image72,
+    }
+    suc.CacheUser(suser)
+    return suser,nil
+}
+
+
+func (suc *SlackUserCache) UserNick(
+        sb *SlackBroker, ukey string, cacheOnly bool) string {
     if val, ok := suc.users[ukey]; ok {
         return val.Nick
     }
-    user, err := sb.api.GetUserInfo(ukey)
+    if cacheOnly { return "" }
+    user,err := suc.UserFromAPI(sb, ukey)
     if err != nil {
-        return "piglet"
-    } else {
-        suc.users[ukey] = &SlackUser{
-            Id: ukey,
-            Nick: user.Name,
-            Avatar: user.Profile.Image72,
-        }
+        sb.log.Warnf("attempted to fetch %s but got err: %v", ukey, err)
+        return ""
     }
-    return user.Name
+    return user.Nick
+}
+
+
+func (suc *SlackUserCache) UserId(
+        sb *SlackBroker, nick string, cacheOnly bool) string {
+    if val, ok := suc.nicks[nick]; ok {
+        return val.Id
+    }
+    if cacheOnly { return "" }
+    user,err := suc.UserFromAPI(sb, nick)
+    if err != nil {
+        sb.log.Warnf("attempted to fetch %s but got err: %v", nick, err)
+        return ""
+    }
+    return user.Id
+}
+
+
+func (suc *SlackUserCache) PopulateCache(sb *SlackBroker, mems []string) {
+    for _,uid := range mems {
+        suc.UserFromAPI(sb, uid)
+    }
 }
 
 
@@ -81,12 +132,10 @@ type SlackBroker struct {
     token string
     mybotid string
     re_uids *regexp.Regexp
+    re_usernick *regexp.Regexp
+    re_atuser *regexp.Regexp
 }
 
-
-func (sb *SlackBroker) CachedUsername(ukey string) string {
-    return sb.usercache.Username(sb,ukey)
-}
 
 
 func (sb *SlackBroker) Name() string {
@@ -94,15 +143,20 @@ func (sb *SlackBroker) Name() string {
 }
 
 
+// allows us to setup internal members without hitting the api
+// let's us do certain tests that don't require api
 func (sb *SlackBroker) SetupInternals() {
     sb.log = NewLogger("slack")
     sb.usercache = &SlackUserCache{}
     sb.usercache.users = make(map[string]*SlackUser)
+    sb.usercache.nicks = make(map[string]*SlackUser)
     sb.re_uids = regexp.MustCompile(`<@(U\w+)>`) // get sub ids in msgs
+    sb.re_usernick = regexp.MustCompile(`^(\w+):`)
+    sb.re_atuser = regexp.MustCompile(`\b@(\w+)\b`)
 }
 
 
-func (sb *SlackBroker) ConvertUserRefs(s string) string {
+func (sb *SlackBroker) ConvertRefsToUsers(s string, cacheOnly bool) string {
     matches := sb.re_uids.FindAllStringSubmatchIndex(s,-1)
     // will contain a uniq set of uids mentioned
     uids := make(map[string]bool)
@@ -117,13 +171,32 @@ func (sb *SlackBroker) ConvertUserRefs(s string) string {
         s = strings.ReplaceAll(
             s,
             fmt.Sprintf("<@%s>",u),
-            sb.CachedUsername(u),
+            sb.usercache.UserNick(sb, u, cacheOnly),
         )
     }
     return s
 }
 
 
+func (sb *SlackBroker) ConvertUsersToRefs(s string, cacheOnly bool) string {
+    // at present, only looks for irc type  USER: at beginning of line
+    matches := sb.re_usernick.FindAllStringSubmatchIndex(s,-1)
+    // will contain a uniq set of uids mentioned
+    for i := len(matches)-1; i >= 0; i-- {
+        // start,stop,sub0,sublen := matches[i]
+        m := matches[i]
+        usernick := s[m[2]:m[3]]
+        uid := sb.usercache.UserId(sb, usernick, cacheOnly)
+        if len(uid) > 4 {
+            s = strings.ReplaceAll(
+                s,
+                usernick,
+                fmt.Sprintf("<@%s>",uid),
+            )
+        }
+    }
+    return s
+}
 
 
 // args [token, channel]
@@ -146,10 +219,13 @@ func (sb *SlackBroker) Setup(args ...string) {
     }
     sb.mybotid = myuser.Profile.BotID
 
+    // populate my channel info
+    // this is a bit ... lame. Should be better way?  XXX
     channels, _ := sb.api.GetChannels(false)
     for _, channel := range channels {
         if channel.Name == sb.channel {
             sb.chanid = channel.ID
+            sb.usercache.PopulateCache(sb, channel.Members)
             break
         }
 	}
@@ -157,6 +233,8 @@ func (sb *SlackBroker) Setup(args ...string) {
         sb.log.Warnf("ERR channel not found (%s)", sb.channel)
         return
     }
+
+    // populate users in the chan
 
 }
 
@@ -167,9 +245,10 @@ func (sb *SlackBroker) Put(msg string) {
 
 
 func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
+    txt := sb.ConvertUsersToRefs(ev.Text, false)
     sb.api.PostMessage(
         sb.chanid,
-        libsl.MsgOptionText(ev.Text, false),
+        libsl.MsgOptionText(txt, false),
         libsl.MsgOptionUsername(ev.Nick),
         libsl.MsgOptionIconEmoji(fmt.Sprintf(":avatar_%s:", ev.Nick)),
     )
@@ -196,9 +275,9 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
     outstr := strings.TrimSpace(strings.Join(outmsgs, " "))
     ev := &Event{
         Origin: sb,
-        Nick: sb.CachedUsername(e.User),
+        Nick: sb.usercache.UserNick(sb, e.User, false),
         RawText: outstr,
-        Text: sb.ConvertUserRefs(outstr),
+        Text: sb.ConvertRefsToUsers(outstr, false),
         ts: time.Now(),
     }
     return ev
