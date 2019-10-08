@@ -133,7 +133,7 @@ type SlackBroker struct {
     mybotid string
     re_uids *regexp.Regexp
     re_usernick *regexp.Regexp
-    re_atuser *regexp.Regexp
+    re_atusers *regexp.Regexp
 }
 
 
@@ -152,7 +152,7 @@ func (sb *SlackBroker) SetupInternals() {
     sb.usercache.nicks = make(map[string]*SlackUser)
     sb.re_uids = regexp.MustCompile(`<@(U\w+)>`) // get sub ids in msgs
     sb.re_usernick = regexp.MustCompile(`^(\w+):`)
-    sb.re_atuser = regexp.MustCompile(`\b@(\w+)\b`)
+    sb.re_atusers = regexp.MustCompile(`@(\w+)\b`)
 }
 
 
@@ -178,10 +178,10 @@ func (sb *SlackBroker) ConvertRefsToUsers(s string, cacheOnly bool) string {
 }
 
 
+
 func (sb *SlackBroker) ConvertUsersToRefs(s string, cacheOnly bool) string {
-    // at present, only looks for irc type  USER: at beginning of line
+    //  first look for irc type  USER: at beginning of line
     matches := sb.re_usernick.FindAllStringSubmatchIndex(s,-1)
-    // will contain a uniq set of uids mentioned
     for i := len(matches)-1; i >= 0; i-- {
         // start,stop,sub0,sublen := matches[i]
         m := matches[i]
@@ -195,6 +195,23 @@ func (sb *SlackBroker) ConvertUsersToRefs(s string, cacheOnly bool) string {
             )
         }
     }
+
+    //  then do embedded @user replacements
+    matches = sb.re_atusers.FindAllStringSubmatchIndex(s,-1)
+    for i := len(matches)-1; i >= 0; i-- {
+        // start,stop,sub0,sublen := matches[i]
+        m := matches[i]
+        usernick := s[m[2]:m[3]]
+        uid := sb.usercache.UserId(sb, usernick, cacheOnly)
+        if len(uid) > 4 {
+            s = strings.ReplaceAll(
+                s,
+                usernick,
+                fmt.Sprintf("<@%s>",uid),
+            )
+        }
+    }
+
     return s
 }
 
