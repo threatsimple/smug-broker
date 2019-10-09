@@ -27,6 +27,7 @@ import (
  * fake the slacklib logger
  * ************************** */
 
+
 type SlackLogger struct {
     *Logger
 }
@@ -249,9 +250,6 @@ func (sb *SlackBroker) Setup(args ...string) {
         sb.log.Warnf("ERR channel not found (%s)", sb.channel)
         return
     }
-
-    // populate users in the chan
-
 }
 
 
@@ -274,7 +272,6 @@ func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
 
 
 func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
-    sb.log.Debugf("SL MsgEv  %+v", e)
     outmsgs := []string{e.Text}
     if len(e.Files) > 0 {
         for _,f := range e.Files {
