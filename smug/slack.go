@@ -58,7 +58,7 @@ type SlackUserCache struct {
 
 func (suc *SlackUserCache) CacheUser(user *SlackUser) {
     suc.users[user.Id] = user
-    suc.nicks[user.Nick] = user
+    suc.nicks[strings.ToLower(user.Nick)] = user
 }
 
 
@@ -95,7 +95,7 @@ func (suc *SlackUserCache) UserNick(
 
 func (suc *SlackUserCache) UserId(
         sb *SlackBroker, nick string, cacheOnly bool) string {
-    if val, ok := suc.nicks[nick]; ok {
+    if val, ok := suc.nicks[strings.ToLower(nick)]; ok {
         return val.Id
     }
     if cacheOnly { return "" }
