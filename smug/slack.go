@@ -178,7 +178,6 @@ func (sb *SlackBroker) ConvertRefsToUsers(s string, cacheOnly bool) string {
 }
 
 
-
 func (sb *SlackBroker) ConvertUsersToRefs(s string, cacheOnly bool) string {
     //  first look for irc type  USER: at beginning of line
     matches := sb.re_usernick.FindAllStringSubmatchIndex(s,-1)
@@ -203,10 +202,10 @@ func (sb *SlackBroker) ConvertUsersToRefs(s string, cacheOnly bool) string {
         m := matches[i]
         usernick := s[m[2]:m[3]]
         uid := sb.usercache.UserId(sb, usernick, cacheOnly)
-        if len(uid) > 4 {
+        if len(uid) > 1 {
             s = strings.ReplaceAll(
                 s,
-                usernick,
+                "@" + usernick,
                 fmt.Sprintf("<@%s>",uid),
             )
         }

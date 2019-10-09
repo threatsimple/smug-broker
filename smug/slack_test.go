@@ -39,11 +39,19 @@ func TestConvertSlackRefs(t *testing.T) {
         sb.ConvertUsersToRefs("nope: hi", true):
             "nope: hi",
         sb.ConvertUsersToRefs("nope: hey @boy", true):
-            "nope: hey @<@U54321>",
+            "nope: hey <@U54321>",
         sb.ConvertUsersToRefs("nope: hey meh@feh.com", true):
             "nope: hey meh@feh.com",
         sb.ConvertUsersToRefs("boy: hey @aaaa", true):
-            "<@U54321>: hey @<@U6CRHMXK4>",
+            "<@U54321>: hey <@U6CRHMXK4>",
+        sb.ConvertUsersToRefs("hey @aaaa", true):
+            "hey <@U6CRHMXK4>",
+        sb.ConvertUsersToRefs("hey @aaaa haha", true):
+            "hey <@U6CRHMXK4> haha",
+        sb.ConvertUsersToRefs("hey @aaaa and @boy", true):
+            "hey <@U6CRHMXK4> and <@U54321>",
+        sb.ConvertUsersToRefs("hey @aaaa and @boy happy", true):
+            "hey <@U6CRHMXK4> and <@U54321> happy",
     }
 
     for want,have := range testwants {
