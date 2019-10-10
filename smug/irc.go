@@ -1,4 +1,9 @@
+// broker: irc
+// owns communication between irc and the dispatcher
+
+
 package smug
+
 
 import (
     "crypto/tls"

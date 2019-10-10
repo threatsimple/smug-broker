@@ -1,3 +1,8 @@
+
+// broker: readthis
+// temporary broker which grabs any line with `read this` as prefix and then
+// parses and forwards that to the read this api endpoint elsewhere for archival
+
 package smug
 
 import (

@@ -1,3 +1,6 @@
+// shared types across smug, makes it easy to ref and share
+
+
 package smug
 
 import "time"

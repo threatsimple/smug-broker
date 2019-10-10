@@ -1,3 +1,6 @@
+// wrapper around our logging so we can setup certain attributes easily
+
+
 package smug
 
 import (

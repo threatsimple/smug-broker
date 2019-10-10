@@ -1,3 +1,8 @@
+
+// broker: localcmd
+// provides interface into commands which execute local to the smug instance
+// instead of being routed elsewhere
+
 package smug
 
 import (
