@@ -19,11 +19,6 @@ func NewCentralDispatch() *CentralDispatch {
 
 
 func (cd *CentralDispatch) Broadcast(ev *Event) {
-    // is this a directed message in reply from earlier??
-    if ev.ReplyBroker != nil {
-        ev.ReplyBroker.Publish(ev, cd)
-        return
-    }
     // hand to all
     for _,b := range cd.brokers {
         if ev.Origin != b {

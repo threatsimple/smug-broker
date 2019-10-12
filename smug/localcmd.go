@@ -98,13 +98,15 @@ func (lcb *LocalCmdBroker) Setup(args ...string) {
 }
 
 
-func (lcb *LocalCmdBroker) NewEvent() *Event {
+func (lcb *LocalCmdBroker) NewEvent(oldEvent *Event) *Event {
     return &Event{
         IsCmdOutput: true,
         Origin: lcb,
         Nick: lcb.botNick,
         Avatar: lcb.botAvatar,
         ts: time.Now(),
+        ReplyBroker: oldEvent.ReplyBroker,
+        ReplyNick: oldEvent.ReplyNick,
     }
 }
 
@@ -119,7 +121,7 @@ func (lcb *LocalCmdBroker) Publish(ev *Event, dis Dispatcher) {
         lcb.log.Debugf("inside Publish, matched")
         for _,cmd := range lcb.prefixCmds {
             if cmd.match(ev) {
-                cmd.exec(ev, lcb.NewEvent(), dis)
+                cmd.exec(ev, lcb.NewEvent(ev), dis)
                 return
             }
         }

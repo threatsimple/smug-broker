@@ -64,7 +64,7 @@ func (ib *IrcBroker) Setup(args ...string) {
 
 
 func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
-    if ev.ReplyBroker != nil || ev.ReplyBroker != ib {
+    if ev.ReplyBroker != nil && ev.ReplyBroker != ib {
         // not intended for us, just ignore silently
         return
     }
