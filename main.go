@@ -62,6 +62,7 @@ func parseReadThisOpts() *ReadThisOpts {
 
 type RuntimeOpts struct {
     loglevel string
+    showVersion bool
 }
 
 
@@ -70,6 +71,8 @@ func parseRuntimeOpts() *RuntimeOpts {
         loglevel: "warning",
     }
     flag.StringVar(&opts.loglevel, "loglevel", "warning", "logging level")
+    flag.BoolVar(&opts.showVersion, "version", false,
+        "display version and exit")
     return opts
 }
 
@@ -100,6 +103,12 @@ func parseOpts() *Opts {
 
 func main() {
     opts := parseOpts()
+
+    // show version and exit?
+    if opts.runtime.showVersion {
+        fmt.Printf("version: %s\n", version)
+        return
+    }
 
     // setup logging first
     smug.SetupLogging("debug")
