@@ -285,8 +285,13 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
     }
     if len(e.Attachments) > 0 {
         for _,a := range e.Attachments {
-            outmsgs = append(outmsgs,
-                fmt.Sprintf("%s - %s", a.Title, a.ImageURL) )
+            if len(a.Text) > 0 {
+                outmsgs = append(outmsgs, a.Text)
+            }
+            if len(a.ImageURL) > 0 {
+                outmsgs = append(outmsgs,
+                    fmt.Sprintf("%s %s", a.Title, a.ImageURL) )
+            }
         }
     }
     // XXX TODO need to include the RespondTo stuff if priv msg...
