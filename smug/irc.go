@@ -52,7 +52,7 @@ func (ib *IrcBroker) Setup(args ...string) {
         func(e *libirc.Event) {
             ib.log.Infof("irc joining %s / %s", ib.server, ib.channel)
             ib.conn.Join(ib.channel)
-            ib.Put(fmt.Sprintf("%s online", ib.botname))
+            ib.conn.Privmsg(ib.channel, fmt.Sprintf("%s online", ib.botname))
         } )
     // ib.conn.AddCallback("366", func(e *irc.Event) { }) // ignore end of names
     err := ib.conn.Connect(ib.server)
@@ -63,16 +63,22 @@ func (ib *IrcBroker) Setup(args ...string) {
 }
 
 
-func (ib *IrcBroker) Put(msg string) {
-    ib.conn.Privmsg(ib.channel, msg)
-}
-
-
 func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
+    if ev.ReplyBroker != nil || ev.ReplyBroker != ib {
+        // not intended for us, just ignore silently
+        return
+    }
+    var msg string
     if ev.IsCmdOutput {
-        ib.Put(fmt.Sprintf("%s", ev.Text))
+        msg = fmt.Sprintf("%s", ev.Text)
     } else {
-        ib.Put(fmt.Sprintf("|%s| %s", ev.Nick, ev.Text))
+        msg = fmt.Sprintf("|%s| %s", ev.Nick, ev.Text)
+    }
+    if ev.ReplyBroker == ib {
+        // private message for a user
+        ib.conn.Privmsg(ev.ReplyNick, msg)
+    } else {
+        ib.conn.Privmsg(ib.channel, msg)
     }
 }
 
@@ -81,11 +87,21 @@ func (ib *IrcBroker) Run(dis Dispatcher) {
     // XXX this should ensure some sort of singleton to ensure Run should only
     // ever be called once...
     ib.conn.AddCallback("PRIVMSG", func (e *libirc.Event) {
+        // are we a priv msg?
+
+// event needs IsPrivateMsg which then responds with the RespondTo broker set on
+// replies.  Is this best way?  Should all messages go to all brokers?  Or should a
+// broker have an option that says "RecvsPrivate"
+
         ev := &Event{
             Origin: ib,
             Nick: e.Nick,
             Text: e.Message(),
             ts: time.Now(),
+        }
+        if len(e.Arguments) > 0 && e.Arguments[0] == ib.nick {
+            ev.ReplyNick = e.Nick
+            ev.ReplyBroker = ib
         }
         dis.Broadcast(ev)
     })

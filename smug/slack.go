@@ -253,25 +253,29 @@ func (sb *SlackBroker) Setup(args ...string) {
 }
 
 
-func (sb *SlackBroker) Put(msg string) {
-    sb.rtm.SendMessage(sb.rtm.NewOutgoingMessage(msg, sb.chanid))
-}
-
-
 func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
+    if ev.ReplyBroker != nil && ev.ReplyBroker != sb {
+        // not intended for us, just move along
+        return
+    }
     txt := sb.ConvertUsersToRefs(ev.Text, false)
+    var dest string
+    if len(ev.ReplyNick) == 0 {
+        dest = sb.chanid
+    } else {
+        dest = ev.ReplyNick
+    }
     sb.api.PostMessage(
-        sb.chanid,
+        dest,
         libsl.MsgOptionText(txt, false),
         libsl.MsgOptionUsername(ev.Nick),
         libsl.MsgOptionIconEmoji(fmt.Sprintf(":avatar_%s:", ev.Nick)),
     )
-    // sb.rtm.SendMessage(sb.rtm.NewOutgoingMessage(msg, sb.chanid))
-    // sb.Put(fmt.Sprintf("%s| %s", ev.Nick, ev.Text))
 }
 
 
 func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
+    sb.log.Debugf("%+v", e)
     outmsgs := []string{e.Text}
     if len(e.Files) > 0 {
         for _,f := range e.Files {
@@ -285,6 +289,7 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
                 fmt.Sprintf("%s - %s", a.Title, a.ImageURL) )
         }
     }
+    // XXX TODO need to include the RespondTo stuff if priv msg...
     outstr := strings.TrimSpace(strings.Join(outmsgs, " "))
     ev := &Event{
         Origin: sb,
