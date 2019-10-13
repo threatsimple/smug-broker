@@ -278,7 +278,6 @@ func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
 
 // accept a slack string and remove urls in favor of url descr where available
 func (sb *SlackBroker) SimplifyParse(s string) string {
-    fmt.Printf("\n\nstarting SimplifyParse with\n%s\n\n", s)
     matches := sb.re_embeddedurls.FindAllStringSubmatchIndex(s,-1)
     // start at the end for replacement, this is a bit janky. XXX
     for i := len(matches)-1; i >= 0; i-- {
@@ -303,7 +302,6 @@ func (sb *SlackBroker) SimplifyParse(s string) string {
         }
         s = strings.ReplaceAll(s, entire_url, udescr)
     }
-    fmt.Printf("\n\nending SimplifyParse with\n%s\n\n", s)
     return s
 }
 
@@ -333,8 +331,6 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
     }
     // XXX TODO need to include the RespondTo stuff if priv msg...
     outstr := strings.TrimSpace(strings.Join(outmsgs, " "))
-    fmt.Printf("\nxxxxx\n\noutmsgs: %+v   \n\noutstr: %s\n\nxxxxx",
-        outmsgs, outstr)
     ev := &Event{
         Origin: sb,
         Nick: sb.usercache.UserNick(sb, e.User, false),

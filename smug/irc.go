@@ -8,6 +8,7 @@ package smug
 import (
     "crypto/tls"
     "fmt"
+    "strings"
     "time"
 
     libirc "github.com/thoj/go-ircevent"
@@ -63,6 +64,17 @@ func (ib *IrcBroker) Setup(args ...string) {
 }
 
 
+func (ib *IrcBroker) MsgTarget(target string, msg string) {
+    for i,s := range strings.Split(msg, "\n") {
+        if i > 6 { return } // just stop
+        if len(s) > 0 {
+            time.Sleep(100 * time.Millisecond) // slow down a flood
+            ib.conn.Privmsg(target,s)
+        }
+    }
+}
+
+
 func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
     if ev.ReplyBroker != nil && ev.ReplyBroker != ib {
         // not intended for us, just ignore silently
@@ -76,9 +88,9 @@ func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
     }
     if ev.ReplyBroker == ib {
         // private message for a user
-        ib.conn.Privmsg(ev.ReplyTarget, msg)
+        go ib.MsgTarget(ev.ReplyTarget, msg)
     } else {
-        ib.conn.Privmsg(ib.channel, msg)
+        go ib.MsgTarget(ib.channel, msg)
     }
 }
 
