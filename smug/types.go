@@ -25,10 +25,10 @@ type Event struct {
     Origin Broker
     ReplyBroker Broker // all brokers will see message but may choose to ignore
                        // unless beneficial (bot handlers, etc)
-    ReplyNick string // replyBroker will use this to target a specific user
-                     // either privately or some other mechanism. this should
-                     // not be changed once set by the originating event as it
-                     // may specific to a given broker's format
+    ReplyTarget string // replyBroker will use this to target a specific user
+                       // either privately or some other mechanism. this should
+                       // not be changed once set by the originating event as it
+                       // may specific to a given broker's format
     Nick string
     Avatar string
     Text string

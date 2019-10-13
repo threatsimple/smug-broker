@@ -135,6 +135,7 @@ type SlackBroker struct {
     re_uids *regexp.Regexp
     re_usernick *regexp.Regexp
     re_atusers *regexp.Regexp
+    re_embeddedurls *regexp.Regexp
 }
 
 
@@ -154,6 +155,7 @@ func (sb *SlackBroker) SetupInternals() {
     sb.re_uids = regexp.MustCompile(`<@(U\w+)>`) // get sub ids in msgs
     sb.re_usernick = regexp.MustCompile(`^(\w+):`)
     sb.re_atusers = regexp.MustCompile(`@(\w+)\b`)
+    sb.re_embeddedurls = regexp.MustCompile(`<(http.+\|?.*)>`)
 }
 
 
@@ -260,10 +262,10 @@ func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
     }
     txt := sb.ConvertUsersToRefs(ev.Text, false)
     var dest string
-    if len(ev.ReplyNick) == 0 {
+    if len(ev.ReplyTarget) == 0 {
         dest = sb.chanid
     } else {
-        dest = ev.ReplyNick
+        dest = ev.ReplyTarget
     }
     sb.api.PostMessage(
         dest,
@@ -271,6 +273,36 @@ func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
         libsl.MsgOptionUsername(ev.Nick),
         libsl.MsgOptionIconEmoji(fmt.Sprintf(":avatar_%s:", ev.Nick)),
     )
+}
+
+
+// accept a slack string and remove urls in favor of url descr where available
+func (sb *SlackBroker) SimplifyParse(s string) string {
+    matches := sb.re_embeddedurls.FindAllStringSubmatchIndex(s,-1)
+    // start at the end for replacement, this is a bit janky. XXX
+    for i := len(matches)-1; i >= 0; i-- {
+        // start,stop,sub0,sublen := matches[i]
+        m := matches[i]
+        entire_url := s[m[0]:m[1]]
+        parts := strings.Split(s[m[2]:m[3]], "|")
+        var udescr string
+        if len(parts) > 2 || len(parts) == 1 {
+            // <http> or <?????>
+            udescr = parts[0]
+        } else if len(parts) == 2 {
+            // <http|descr> or <http|>
+            if len(parts[1]) > 0 {
+                udescr = parts[1]
+            } else {
+                udescr = parts[0]
+            }
+        } else {
+            // something screwy man
+            udescr = entire_url
+        }
+        s = strings.ReplaceAll(s, entire_url, udescr)
+    }
+    return s
 }
 
 
@@ -285,6 +317,9 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
     }
     if len(e.Attachments) > 0 {
         for _,a := range e.Attachments {
+            if len(a.Fallback) > 0 {
+                outmsgs = append(outmsgs, a.Fallback)
+            }
             if len(a.Text) > 0 {
                 outmsgs = append(outmsgs, a.Text)
             }
@@ -300,7 +335,7 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
         Origin: sb,
         Nick: sb.usercache.UserNick(sb, e.User, false),
         RawText: outstr,
-        Text: sb.ConvertRefsToUsers(outstr, false),
+        Text: sb.SimplifyParse(sb.ConvertRefsToUsers(outstr, false)),
         ts: time.Now(),
     }
     return ev
@@ -324,8 +359,13 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
             // smugbot: 2019/09/14 08:47:44 websocket_managed_conn.go:369:
             // Incoming Event:
             // {"client_msg_id":"ed722fbc-5b37-4f78-9981-e3c9ce5c85a1","suppress_notification":false,"type":"message","text":"test","user":"U6CRHMXK4","team":"T6CRHMX5G","user_team":"T6CRHMX5G","source_team":"T6CRHMX5G","channel":"C6MR9CBGR","event_ts":"1568468854.004200","ts":"1568468854.004200"}
-            if e.BotID != sb.mybotid && e.Channel == sb.chanid {
+            if e.BotID != sb.mybotid && len(e.User) > 0 {
                 ev := sb.ParseToEvent(e)
+                if e.Channel != sb.chanid {
+                    // possibly from a private message or other non-channel
+                    ev.ReplyBroker = sb
+                    ev.ReplyTarget = e.Channel
+                }
                 dis.Broadcast(ev)
             }
         case *libsl.PresenceChangeEvent:

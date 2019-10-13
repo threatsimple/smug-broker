@@ -106,7 +106,7 @@ func (lcb *LocalCmdBroker) NewEvent(oldEvent *Event) *Event {
         Avatar: lcb.botAvatar,
         ts: time.Now(),
         ReplyBroker: oldEvent.ReplyBroker,
-        ReplyNick: oldEvent.ReplyNick,
+        ReplyTarget: oldEvent.ReplyTarget,
     }
 }
 

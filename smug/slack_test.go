@@ -4,6 +4,24 @@ import (
     "testing"
 )
 
+
+func TestSimplifyParse(t *testing.T) {
+    sb := &SlackBroker{}
+    sb.SetupInternals()
+
+    testwants := map[string]string {
+        "hey feh": sb.SimplifyParse("hey <http://feh/b|feh>"),
+        "hey http://feh/a": sb.SimplifyParse("hey <http://feh/a|>"),
+        "hey http://feh/b": sb.SimplifyParse("hey <http://feh/b>"),
+    }
+    for want, have := range testwants {
+        if want != have {
+            t.Errorf("err: have [%s] wanted [%s]", have, want)
+        }
+    }
+}
+
+
 func TestConvertSlackRefs(t *testing.T) {
     sb := &SlackBroker{}
     sb.SetupInternals()
@@ -23,7 +41,6 @@ func TestConvertSlackRefs(t *testing.T) {
     }
     sb.usercache.users[u2.Id] = u2
     sb.usercache.nicks[u2.Nick] = u2
-
 
     testwants := map[string]string {
         sb.ConvertRefsToUsers(" <@U6CRHMXK4> congradulations!!!", true):
@@ -60,7 +77,7 @@ func TestConvertSlackRefs(t *testing.T) {
 
     for want,have := range testwants {
         if want != have {
-            t.Errorf("err: wanted [%s] got [%s]", have, want)
+            t.Errorf("err: have [%s] wanted [%s]", have, want)
         }
     }
 

@@ -76,7 +76,7 @@ func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
     }
     if ev.ReplyBroker == ib {
         // private message for a user
-        ib.conn.Privmsg(ev.ReplyNick, msg)
+        ib.conn.Privmsg(ev.ReplyTarget, msg)
     } else {
         ib.conn.Privmsg(ib.channel, msg)
     }
@@ -100,7 +100,7 @@ func (ib *IrcBroker) Run(dis Dispatcher) {
             ts: time.Now(),
         }
         if len(e.Arguments) > 0 && e.Arguments[0] == ib.nick {
-            ev.ReplyNick = e.Nick
+            ev.ReplyTarget = e.Nick
             ev.ReplyBroker = ib
         }
         dis.Broadcast(ev)
