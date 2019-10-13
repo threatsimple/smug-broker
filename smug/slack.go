@@ -331,6 +331,8 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
     }
     // XXX TODO need to include the RespondTo stuff if priv msg...
     outstr := strings.TrimSpace(strings.Join(outmsgs, " "))
+    fmt.Printf("\nxxxxx\n\noutmsgs: %+v   \n\noutstr: %s\n\nxxxxx",
+        outmsgs, outstr)
     ev := &Event{
         Origin: sb,
         Nick: sb.usercache.UserNick(sb, e.User, false),
