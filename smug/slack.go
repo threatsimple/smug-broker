@@ -193,7 +193,7 @@ func (sb *SlackBroker) ConvertUsersToRefs(s string, cacheOnly bool) string {
             s = strings.ReplaceAll(
                 s,
                 usernick,
-                fmt.Sprintf("<@%s>",uid),
+                fmt.Sprintf("@%s",uid),
             )
         }
     }

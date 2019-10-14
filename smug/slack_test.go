@@ -52,7 +52,7 @@ func TestConvertSlackRefs(t *testing.T) {
         sb.ConvertRefsToUsers(" <@88888> congradulations!!!", true):
             " <@88888> congradulations!!!",
         sb.ConvertUsersToRefs("boy: gobble", true):
-            "<@U54321>: gobble",
+            "@U54321: gobble",
         sb.ConvertUsersToRefs("nope: hi", true):
             "nope: hi",
         sb.ConvertUsersToRefs("nope: hey @boy", true):
@@ -60,7 +60,7 @@ func TestConvertSlackRefs(t *testing.T) {
         sb.ConvertUsersToRefs("nope: hey meh@feh.com", true):
             "nope: hey meh@feh.com",
         sb.ConvertUsersToRefs("boy: hey @aaaa", true):
-            "<@U54321>: hey <@U6CRHMXK4>",
+            "@U54321: hey <@U6CRHMXK4>",
         sb.ConvertUsersToRefs("hey @aaaa", true):
             "hey <@U6CRHMXK4>",
         sb.ConvertUsersToRefs("hey @aaaa haha", true):
