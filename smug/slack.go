@@ -17,6 +17,7 @@ import (
     "fmt"
     "regexp"
     "strings"
+    "sync"
     "time"
 
     libsl "github.com/nlopes/slack"
@@ -52,14 +53,17 @@ type SlackUser struct {
 
 
 type SlackUserCache struct {
+    mux sync.RWMutex
     users map[string]*SlackUser
     nicks map[string]*SlackUser
 }
 
 
 func (suc *SlackUserCache) CacheUser(user *SlackUser) {
+    suc.mux.Lock()
     suc.users[user.Id] = user
     suc.nicks[strings.ToLower(user.Nick)] = user
+    suc.mux.Unlock()
 }
 
 
@@ -81,7 +85,10 @@ func (suc *SlackUserCache) UserFromAPI(
 
 func (suc *SlackUserCache) UserNick(
         sb *SlackBroker, ukey string, cacheOnly bool) string {
-    if val, ok := suc.users[ukey]; ok {
+    suc.mux.RLock()
+    val, ok := suc.users[ukey]
+    suc.mux.RUnlock()
+    if ok {
         return val.Nick
     }
     if cacheOnly { return "" }
@@ -96,7 +103,10 @@ func (suc *SlackUserCache) UserNick(
 
 func (suc *SlackUserCache) UserId(
         sb *SlackBroker, nick string, cacheOnly bool) string {
-    if val, ok := suc.nicks[strings.ToLower(nick)]; ok {
+    suc.mux.RLock()
+    val, ok := suc.nicks[strings.ToLower(nick)]
+    suc.mux.RUnlock()
+    if ok {
         return val.Id
     }
     if cacheOnly { return "" }
@@ -113,6 +123,14 @@ func (suc *SlackUserCache) PopulateCache(sb *SlackBroker, mems []string) {
     for _,uid := range mems {
         suc.UserFromAPI(sb, uid)
     }
+}
+
+
+func (suc *SlackUserCache) Setup() {
+    suc.mux.Lock()
+    suc.users = make(map[string]*SlackUser)
+    suc.nicks = make(map[string]*SlackUser)
+    suc.mux.Unlock()
 }
 
 
@@ -150,8 +168,7 @@ func (sb *SlackBroker) Name() string {
 func (sb *SlackBroker) SetupInternals() {
     sb.log = NewLogger("slack")
     sb.usercache = &SlackUserCache{}
-    sb.usercache.users = make(map[string]*SlackUser)
-    sb.usercache.nicks = make(map[string]*SlackUser)
+    sb.usercache.Setup()
     sb.re_uids = regexp.MustCompile(`<@(U\w+)>`) // get sub ids in msgs
     sb.re_usernick = regexp.MustCompile(`^(\w+):`)
     sb.re_atusers = regexp.MustCompile(`@(\w+)\b`)

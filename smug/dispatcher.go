@@ -4,10 +4,14 @@
 
 package smug
 
-import "fmt"
+import (
+    "fmt"
+    "sync"
+)
 
 
 type CentralDispatch struct {
+    mux sync.RWMutex
     log *Logger
     brokers []Broker
 }
@@ -20,11 +24,13 @@ func NewCentralDispatch() *CentralDispatch {
 
 func (cd *CentralDispatch) Broadcast(ev *Event) {
     // hand to all
+    cd.mux.RLock()
     for _,b := range cd.brokers {
         if ev.Origin != b {
-            b.Publish(ev, cd)
+            go b.Publish(ev, cd)
         }
     }
+    cd.mux.RUnlock()
 }
 
 
@@ -34,12 +40,15 @@ func (cd *CentralDispatch) NumBrokers() int {
 
 
 func (cd *CentralDispatch) AddBroker(b Broker) {
+    cd.mux.Lock()
     cd.brokers = append(cd.brokers, b)
+    cd.mux.Unlock()
 }
 
 
 func (cd *CentralDispatch) RemoveBroker(b Broker) error {
     found := false
+    cd.mux.Lock()
     for i,n := range cd.brokers {
         if n == b {
             cd.brokers[i] = cd.brokers[len(cd.brokers)-1]
@@ -48,6 +57,7 @@ func (cd *CentralDispatch) RemoveBroker(b Broker) error {
             break
         }
     }
+    cd.mux.Unlock()
     if !found {
         return fmt.Errorf("broker not found: %s", b.Name())
     }

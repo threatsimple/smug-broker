@@ -31,8 +31,7 @@ func TestConvertSlackRefs(t *testing.T) {
         Nick:"aaaa",
         Avatar:"",
     }
-    sb.usercache.users[u1.Id] = u1
-    sb.usercache.nicks[u1.Nick] = u1
+    sb.usercache.CacheUser(u1)
 
     u2 := &SlackUser{
         Id: "U54321",
