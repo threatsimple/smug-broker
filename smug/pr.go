@@ -1,26 +1,67 @@
 
-// broker: readthis
-// temporary broker which grabs any line with `read this` as prefix and then
-// parses and forwards that to the read this api endpoint elsewhere for archival
+// broker: pattern routing
+// parses messages against a regex pattern and if a match occurs,
+// forwards the entire message to a given url in a json encoded POST
+// if a properly formatted json body is returned, then a message will be
+// dispatched appropriately
+
 
 package smug
 
 import (
     "bytes"
     "encoding/json"
+    "fmt"
     "io/ioutil"
     "log"
     "net/http"
+    "regexp"
     "strings"
-
-    "github.com/mvdan/xurls"
 )
 
 
-type ReadThisBroker struct {
-    apiurl string
-    prefix string
-    authcode string
+type Pattern struct {
+    re *regexp.Regexp
+    url string
+    headers map[string]string
+    method string
+}
+
+
+func NewExtendedPattern(
+        reg string,
+        url string,
+        headers map[string]string,
+        method string,
+        ) (*Pattern, error) {
+    // validate incoming values
+    if len(url) < 10 && ! strings.HasPrefix("http", strings.ToLower(url)) {
+        return nil, fmt.Errorf("url must begin with http")
+    }
+    if re,err := regexp.MustCompile(reg); err != nil {
+        return nil, fmt.Errorf("error with regex: %+v", err)
+    }
+    meth := strings.ToUpper(method)
+    if meth != "GET" || meth != "POST" {
+        return nil, fmt.Errorf("method must be either GET or POST")
+    }
+    return &Pattern{reg: re, url:url, headers: headers, method: method}, nil
+}
+
+
+func NewPattern(reg string, url string) (*Pattern, error) {
+    return NewExtendedPattern(
+        reg,
+        url,
+        map[string]string{},
+        "POST",
+    )
+}
+
+
+type PatternRoutingBroker struct {
+
+    patterns []*Pattern
 }
 
 
