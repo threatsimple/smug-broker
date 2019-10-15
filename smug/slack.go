@@ -61,9 +61,9 @@ type SlackUserCache struct {
 
 func (suc *SlackUserCache) CacheUser(user *SlackUser) {
     suc.mux.Lock()
+    defer suc.mux.Unlock()
     suc.users[user.Id] = user
     suc.nicks[strings.ToLower(user.Nick)] = user
-    suc.mux.Unlock()
 }
 
 
@@ -83,15 +83,31 @@ func (suc *SlackUserCache) UserFromAPI(
 }
 
 
+func (suc *SlackUserCache) userInIdCache(ukey string) (*SlackUser,bool) {
+    suc.mux.RLock()
+    defer suc.mux.RUnlock()
+    user, found := suc.users[ukey]
+    return user, found
+}
+
+
+func (suc *SlackUserCache) userInNickCache(nick string) (*SlackUser,bool) {
+    suc.mux.RLock()
+    defer suc.mux.RUnlock()
+    user, found := suc.nicks[strings.ToLower(nick)]
+    return user, found
+}
+
+
 func (suc *SlackUserCache) UserNick(
         sb *SlackBroker, ukey string, cacheOnly bool) string {
-    suc.mux.RLock()
-    val, ok := suc.users[ukey]
-    suc.mux.RUnlock()
-    if ok {
-        return val.Nick
+    cached_user,found := suc.userInIdCache(ukey)
+    if found {
+        return cached_user.Nick
     }
-    if cacheOnly { return "" }
+    if cacheOnly {
+        return ""
+    }
     user,err := suc.UserFromAPI(sb, ukey)
     if err != nil {
         sb.log.Warnf("attempted to fetch %s but got err: %v", ukey, err)
@@ -103,13 +119,14 @@ func (suc *SlackUserCache) UserNick(
 
 func (suc *SlackUserCache) UserId(
         sb *SlackBroker, nick string, cacheOnly bool) string {
-    suc.mux.RLock()
-    val, ok := suc.nicks[strings.ToLower(nick)]
-    suc.mux.RUnlock()
-    if ok {
-        return val.Id
+    cached_user,found := suc.userInNickCache(nick)
+    if found {
+        return cached_user.Id
     }
-    if cacheOnly { return "" }
+    if cacheOnly {
+        // possibly don't want to do api calls for whatever reason
+        return ""
+    }
     user,err := suc.UserFromAPI(sb, nick)
     if err != nil {
         sb.log.Warnf("attempted to fetch %s but got err: %v", nick, err)
@@ -128,9 +145,9 @@ func (suc *SlackUserCache) PopulateCache(sb *SlackBroker, mems []string) {
 
 func (suc *SlackUserCache) Setup() {
     suc.mux.Lock()
+    defer suc.mux.Unlock()
     suc.users = make(map[string]*SlackUser)
     suc.nicks = make(map[string]*SlackUser)
-    suc.mux.Unlock()
 }
 
 
