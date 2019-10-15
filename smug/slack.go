@@ -84,7 +84,7 @@ func (suc *SlackUserCache) UserNick(
     if val, ok := suc.users[ukey]; ok {
         return val.Nick
     }
-    if cacheOnly { return "x" }
+    if cacheOnly { return "" }
     user,err := suc.UserFromAPI(sb, ukey)
     if err != nil {
         sb.log.Warnf("attempted to fetch %s but got err: %v", ukey, err)
