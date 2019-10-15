@@ -84,7 +84,7 @@ func (suc *SlackUserCache) UserNick(
     if val, ok := suc.users[ukey]; ok {
         return val.Nick
     }
-    if cacheOnly { return "" }
+    if cacheOnly { return "x" }
     user,err := suc.UserFromAPI(sb, ukey)
     if err != nil {
         sb.log.Warnf("attempted to fetch %s but got err: %v", ukey, err)
@@ -308,6 +308,8 @@ func (sb *SlackBroker) SimplifyParse(s string) string {
 
 func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
     sb.log.Debugf("%+v", e)
+    nick := sb.usercache.UserNick(sb, e.User, false)
+    fmt.Printf("\n\nnick %s\n\n", nick)
     outmsgs := []string{e.Text}
     if len(e.Files) > 0 {
         for _,f := range e.Files {
@@ -320,9 +322,11 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
             if len(a.Fallback) > 0 {
                 outmsgs = append(outmsgs, a.Fallback)
             }
+            /*
             if len(a.Text) > 0 {
                 outmsgs = append(outmsgs, a.Text)
             }
+            */
             if len(a.ImageURL) > 0 {
                 outmsgs = append(outmsgs,
                     fmt.Sprintf("%s %s", a.Title, a.ImageURL) )
@@ -333,7 +337,7 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
     outstr := strings.TrimSpace(strings.Join(outmsgs, " "))
     ev := &Event{
         Origin: sb,
-        Nick: sb.usercache.UserNick(sb, e.User, false),
+        Nick: nick,
         RawText: outstr,
         Text: sb.SimplifyParse(sb.ConvertRefsToUsers(outstr, false)),
         ts: time.Now(),
