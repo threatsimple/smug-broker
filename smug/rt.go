@@ -84,7 +84,7 @@ func (rtb *ReadThisBroker) ParseText(line string) (string, string) {
 func (rtb *ReadThisBroker) Publish(ev *Event, dis Dispatcher) {
     found,_ := rtb.ParseText(ev.Text)
     if len(found) > 0 {
-        rtb.Submit(
+        go rtb.Submit(
             ev.Nick,
             found,
             "",
