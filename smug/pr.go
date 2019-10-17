@@ -1,5 +1,6 @@
 
 // broker: pattern routing
+// IF a message.matches(some_pattern) { send(message, some_url) }
 // parses messages against a regex pattern and if a match occurs,
 // forwards the entire message to a given url in a json encoded POST
 // if a properly formatted json body is returned, then a message will be
@@ -17,7 +18,13 @@ import (
     "net/http"
     "regexp"
     "strings"
+    "sync"
 )
+
+
+// --------------------------------------------------
+// Pattern
+// --------------------------------------------------
 
 
 type Pattern struct {
@@ -59,12 +66,30 @@ func NewPattern(reg string, url string) (*Pattern, error) {
 }
 
 
-type PatternRoutingBroker struct {
+func (p *Pattern) parse(ev *Event) {
+    fmt.Printf("matches: %+v", p.reg.FindAllStringSubmatch(ev.Text))
+}
 
+
+// --------------------------------------------------
+// PatternRoutingBroker
+// --------------------------------------------------
+
+
+type PatternRoutingBroker struct {
+    pmux sync.Mutex
     patterns []*Pattern
 }
 
 
+type (prb *PatternRoutingBroker) AddPattern(newp *Pattern) {
+    prb.pmux.Lock()
+    prb.patterns = append(prb.patterns, newp)
+    prb.pmux.Unlock()
+}
+
+
+/*
 func (rtb *ReadThisBroker) Submit(
         nick string, url string, tags string, text string ) {
     reqbody, err := json.Marshal(map[string]string{
@@ -94,22 +119,23 @@ func (rtb *ReadThisBroker) Submit(
         return
     }
 }
+*/
 
 
-func (rtb *ReadThisBroker) Name() string {
-    return "readthis"
+func (prb *PatternRoutingBroker) Name() string {
+    return "pattern-router"
 }
 
 // args [apiurl, prefix]
-func (rtb *ReadThisBroker) Setup(args ...string) {
-    rtb.apiurl = args[0]
-    rtb.prefix = args[1]
-    rtb.authcode = args[2]
+func (prb *PatternRoutingBroker) Setup(args ...string) {
 }
 
 
 // returns (url, tags)
-func (rtb *ReadThisBroker) ParseText(line string) (string, string) {
+func (prb *PatternRoutingBroker) ParseText(line string) (string, string) {
+
+
+
     if strings.HasPrefix(line, rtb.prefix) {
         found := xurls.Strict().FindString(line)
         if len(found) > 0 {
@@ -122,16 +148,15 @@ func (rtb *ReadThisBroker) ParseText(line string) (string, string) {
 
 // since all messages go through the Publish from the Dispatcher we can just
 // hook here to look for our read this messages
-func (rtb *ReadThisBroker) Publish(ev *Event, dis Dispatcher) {
-    found,_ := rtb.ParseText(ev.Text)
-    if len(found) > 0 {
-        go rtb.Submit(
-            ev.Nick,
-            found,
-            "",
-            ev.Text,
-        )
+func (prb *PatternRoutingBroker) Publish(ev *Event, dis Dispatcher) {
+
+    // mux lock here?
+    prb.pmux.RLock()
+    defer prb.pmux.RUnlock()
+    for _,ptn := range prb.patterns {
+        ptn.parse(ev)
     }
+
 }
 
 
