@@ -289,9 +289,9 @@ func (sb *SlackBroker) Setup(args ...string) {
 }
 
 
-func (sb *SlackBroker) Publish(ev *Event, dis Dispatcher) {
+func (sb *SlackBroker) HandleEvent(ev *Event, dis Dispatcher) {
     if ev.ReplyBroker != nil && ev.ReplyBroker != sb {
-        // not intended for us, just move along
+        // if not intended for us, eject here
         return
     }
     txt := sb.ConvertUsersToRefs(ev.Text, false)
@@ -380,7 +380,7 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
 }
 
 
-func (sb *SlackBroker) Run(dis Dispatcher) {
+func (sb *SlackBroker) Activate(dis Dispatcher) {
     if sb.rtm == nil {
         // raise some error here XXX TODO
     }
@@ -421,5 +421,8 @@ func (sb *SlackBroker) Run(dis Dispatcher) {
         }
     }
 }
+
+
+func (sb *SlackBroker) Deactivate() { }
 
 

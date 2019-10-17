@@ -1,4 +1,3 @@
-
 // broker: pattern routing
 // IF a message.matches(some_pattern) { send(message, some_url) }
 // parses messages against a regex pattern and if a match occurs,
@@ -9,13 +8,9 @@
 
 package smug
 
+
 import (
-    "bytes"
-    "encoding/json"
     "fmt"
-    "io/ioutil"
-    "log"
-    "net/http"
     "regexp"
     "strings"
     "sync"
@@ -45,14 +40,12 @@ func NewExtendedPattern(
     if len(url) < 10 && ! strings.HasPrefix("http", strings.ToLower(url)) {
         return nil, fmt.Errorf("url must begin with http")
     }
-    if re,err := regexp.MustCompile(reg); err != nil {
-        return nil, fmt.Errorf("error with regex: %+v", err)
-    }
+    re := regexp.MustCompile(reg)
     meth := strings.ToUpper(method)
     if meth != "GET" || meth != "POST" {
         return nil, fmt.Errorf("method must be either GET or POST")
     }
-    return &Pattern{reg: re, url:url, headers: headers, method: method}, nil
+    return &Pattern{re:re, url:url, headers:headers, method:method}, nil
 }
 
 
@@ -67,7 +60,7 @@ func NewPattern(reg string, url string) (*Pattern, error) {
 
 
 func (p *Pattern) parse(ev *Event) {
-    fmt.Printf("matches: %+v", p.reg.FindAllStringSubmatch(ev.Text))
+    fmt.Printf("matches: %+v", p.re.FindAllStringSubmatch(ev.Text,-1))
 }
 
 
@@ -77,12 +70,12 @@ func (p *Pattern) parse(ev *Event) {
 
 
 type PatternRoutingBroker struct {
-    pmux sync.Mutex
+    pmux sync.RWMutex
     patterns []*Pattern
 }
 
 
-type (prb *PatternRoutingBroker) AddPattern(newp *Pattern) {
+func (prb *PatternRoutingBroker) AddPattern(newp *Pattern) {
     prb.pmux.Lock()
     prb.patterns = append(prb.patterns, newp)
     prb.pmux.Unlock()
@@ -126,31 +119,26 @@ func (prb *PatternRoutingBroker) Name() string {
     return "pattern-router"
 }
 
+
 // args [apiurl, prefix]
-func (prb *PatternRoutingBroker) Setup(args ...string) {
-}
+func (prb *PatternRoutingBroker) Setup(args ...string) { }
 
 
 // returns (url, tags)
 func (prb *PatternRoutingBroker) ParseText(line string) (string, string) {
-
-
-
+    /*
     if strings.HasPrefix(line, rtb.prefix) {
         found := xurls.Strict().FindString(line)
         if len(found) > 0 {
             return found, "" // tags empty for now
         }
     }
+    */
     return "",""
 }
 
 
-// since all messages go through the Publish from the Dispatcher we can just
-// hook here to look for our read this messages
-func (prb *PatternRoutingBroker) Publish(ev *Event, dis Dispatcher) {
-
-    // mux lock here?
+func (prb *PatternRoutingBroker) HandleEvent(ev *Event, dis Dispatcher) {
     prb.pmux.RLock()
     defer prb.pmux.RUnlock()
     for _,ptn := range prb.patterns {
@@ -158,5 +146,9 @@ func (prb *PatternRoutingBroker) Publish(ev *Event, dis Dispatcher) {
     }
 
 }
+
+
+func (prb *PatternRoutingBroker) Activate(dis Dispatcher) { }
+func (prb *PatternRoutingBroker) Deactivate() { }
 
 

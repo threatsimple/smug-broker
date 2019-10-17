@@ -27,7 +27,7 @@ func (cd *CentralDispatch) Broadcast(ev *Event) {
     cd.mux.RLock()
     for _,b := range cd.brokers {
         if ev.Origin != b {
-            go b.Publish(ev, cd)
+            go b.HandleEvent(ev, cd)
         }
     }
     cd.mux.RUnlock()
@@ -40,6 +40,7 @@ func (cd *CentralDispatch) NumBrokers() int {
 
 
 func (cd *CentralDispatch) AddBroker(b Broker) {
+    go b.Activate(cd)
     cd.mux.Lock()
     cd.brokers = append(cd.brokers, b)
     cd.mux.Unlock()

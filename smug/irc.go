@@ -75,7 +75,7 @@ func (ib *IrcBroker) MsgTarget(target string, msg string) {
 }
 
 
-func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
+func (ib *IrcBroker) HandleEvent(ev *Event, dis Dispatcher) {
     if ev.ReplyBroker != nil && ev.ReplyBroker != ib {
         // not intended for us, just ignore silently
         return
@@ -95,7 +95,7 @@ func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
 }
 
 
-func (ib *IrcBroker) Run(dis Dispatcher) {
+func (ib *IrcBroker) Activate(dis Dispatcher) {
     // XXX this should ensure some sort of singleton to ensure Run should only
     // ever be called once...
     ib.conn.AddCallback("PRIVMSG", func (e *libirc.Event) {
@@ -130,4 +130,5 @@ func (ib *IrcBroker) Run(dis Dispatcher) {
     })
 }
 
+func (ib *IrcBroker) Deactivate() { }
 

@@ -122,7 +122,6 @@ func main() {
     // slack setup
     sb := &smug.SlackBroker{}
     sb.Setup(opts.slack.token, opts.slack.channel)
-    go sb.Run(dispatcher)
     dispatcher.AddBroker(sb)
     defer dispatcher.RemoveBroker(sb)
 
@@ -134,7 +133,6 @@ func main() {
         opts.irc.nick,
         fmt.Sprintf("%s-%s", "smug", version),
     )
-    go ib.Run(dispatcher)
     dispatcher.AddBroker(ib)
     defer dispatcher.RemoveBroker(ib)
 
@@ -143,10 +141,10 @@ func main() {
     dispatcher.AddBroker(lc)
     defer dispatcher.RemoveBroker(lc)
 
-    rtb := &smug.ReadThisBroker{}
-    rtb.Setup(opts.rt.apibase, opts.rt.prefix, opts.rt.authcode)
-    dispatcher.AddBroker(rtb)
-    defer dispatcher.RemoveBroker(rtb)
+    prb := &smug.PatternRoutingBroker{}
+    // prbrtb.Setup(opts.rt.apibase, opts.rt.prefix, opts.rt.authcode)
+    dispatcher.AddBroker(prb)
+    defer dispatcher.RemoveBroker(prb)
 
     // just loop here for now so others can run
     for true {
