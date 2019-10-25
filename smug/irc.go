@@ -64,12 +64,12 @@ func (ib *IrcBroker) Setup(args ...string) {
 }
 
 
-func (ib *IrcBroker) MsgTarget(target string, msg string) {
+func (ib *IrcBroker) MsgTarget(target string, msg string, prefix string) {
     for i,s := range strings.Split(msg, "\n") {
         if i > 6 { return } // just stop
         if len(s) > 0 {
             time.Sleep(100 * time.Millisecond) // slow down a flood
-            ib.conn.Privmsg(target,s)
+            ib.conn.Privmsg(target,prefix + s)
         }
     }
 }
@@ -80,17 +80,17 @@ func (ib *IrcBroker) HandleEvent(ev *Event, dis Dispatcher) {
         // not intended for us, just ignore silently
         return
     }
-    var msg string
+    var prefix string
     if ev.IsCmdOutput {
-        msg = fmt.Sprintf("%s", ev.Text)
+        prefix = ""
     } else {
-        msg = fmt.Sprintf("|%s| %s", ev.Nick, ev.Text)
+        prefix = fmt.Sprintf("|%s| ", ev.Nick)
     }
     if ev.ReplyBroker == ib {
         // private message for a user
-        go ib.MsgTarget(ev.ReplyTarget, msg)
+        go ib.MsgTarget(ev.ReplyTarget, ev.Text, prefix)
     } else {
-        go ib.MsgTarget(ib.channel, msg)
+        go ib.MsgTarget(ib.channel, ev.Text, prefix)
     }
 }
 
