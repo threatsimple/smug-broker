@@ -383,6 +383,7 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
 func (sb *SlackBroker) Activate(dis Dispatcher) {
     if sb.rtm == nil {
         // raise some error here XXX TODO
+        sb.log.Panic(fmt.Errorf("rtm is nil.  Setup not called?"))
     }
     go sb.rtm.ManageConnection()
     for msg := range sb.rtm.IncomingEvents {

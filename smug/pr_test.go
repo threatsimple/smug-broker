@@ -1,12 +1,17 @@
 package smug
 
+
 import (
     "testing"
 )
 
 
 func TestPatternParse(t *testing.T) {
-    p,_ := NewPattern(`(?P<xyz>xyz.+\b`, "http://feh.com")
+    p,err := NewPattern(`(?P<xyz>xyz.+)\b`, "http://feh.com")
+    if err != nil {
+        t.Errorf("test pattern %s", err)
+        return
+    }
     p.parse(&Event{Text:"asdf xyzhello bye"})
     testwants := map[string]string {
         "feh":"meh",
@@ -16,7 +21,6 @@ func TestPatternParse(t *testing.T) {
             t.Errorf("err: have [%s] wanted [%s]", have, want)
         }
     }
-
-
 }
+
 

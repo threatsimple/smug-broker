@@ -36,13 +36,16 @@ func NewExtendedPattern(
         headers map[string]string,
         method string,
         ) (*Pattern, error) {
-    // validate incoming values
+    // validate incoming values a smidge
     if len(url) < 10 && ! strings.HasPrefix("http", strings.ToLower(url)) {
         return nil, fmt.Errorf("url must begin with http")
     }
-    re := regexp.MustCompile(reg)
+    re,err := regexp.Compile(reg)
+    if err != nil {
+        return nil, fmt.Errorf("error compiling regex: %s", err)
+    }
     meth := strings.ToUpper(method)
-    if meth != "GET" || meth != "POST" {
+    if ! (meth == "GET" || meth == "POST") {
         return nil, fmt.Errorf("method must be either GET or POST")
     }
     return &Pattern{re:re, url:url, headers:headers, method:method}, nil
@@ -60,7 +63,7 @@ func NewPattern(reg string, url string) (*Pattern, error) {
 
 
 func (p *Pattern) parse(ev *Event) {
-    fmt.Printf("matches: %+v", p.re.FindAllStringSubmatch(ev.Text,-1))
+    fmt.Printf("\n\nmatches: %+v\n\n", p.re.FindAllStringSubmatch(ev.Text,-1))
 }
 
 
@@ -149,6 +152,7 @@ func (prb *PatternRoutingBroker) HandleEvent(ev *Event, dis Dispatcher) {
 
 
 func (prb *PatternRoutingBroker) Activate(dis Dispatcher) { }
+
 func (prb *PatternRoutingBroker) Deactivate() { }
 
 

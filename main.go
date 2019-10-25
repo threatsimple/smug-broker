@@ -5,6 +5,8 @@ import (
     "fmt"
     "time"
 
+    hocon "github.com/go-akka/configuration"
+
     smug "github.com/nod/smug/smug"
 )
 
@@ -85,6 +87,9 @@ type Opts struct {
 }
 
 
+
+
+
 func parseOpts() *Opts {
     iopts := parseIrcOpts()
     sopts := parseSlackOpts()
@@ -94,7 +99,7 @@ func parseOpts() *Opts {
         irc: iopts,
         slack: sopts,
         rt: rtopts,
-        runtime: runopts,
+        run: runopts,
     }
     flag.Parse()
     return opts
@@ -114,7 +119,6 @@ func main() {
     smug.SetupLogging("debug")
 
     log := smug.NewLogger("smug")
-
     log.Infof("starting smug ver:%s", version)
 
     dispatcher := smug.NewCentralDispatch()
