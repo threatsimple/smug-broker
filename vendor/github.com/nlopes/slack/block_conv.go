@@ -61,8 +61,7 @@ func (b *Blocks) UnmarshalJSON(data []byte) error {
 		case "section":
 			block = &SectionBlock{}
 		default:
-		    continue  // TEMPORARY
-			// return errors.New("unsupported block type")
+			return errors.New("unsupported block type")
 		}
 
 		err = json.Unmarshal(r, block)

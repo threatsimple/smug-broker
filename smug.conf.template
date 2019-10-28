@@ -1,0 +1,34 @@
+
+# runtime config
+
+# this is a list of brokers to being at startup. there must be a corresponding
+# configuration stanza hanging off the brokers object
+# Note - there are nothing magical about these slugs.  They just must be unique
+# for each broker config stanza.
+active-brokers = [
+	"irc-net"
+	"slack-work"
+]
+
+# irc config
+# this slug must correspond to an active-brokers member or it will not be
+# instantiated.
+brokers.irc-net {
+	type = "irc"
+	server = "some.server.com:portnum"
+	ssl = true
+	nick = "some_irc_nick"
+	channel = "somechan"
+}
+
+# slack1 config
+brokers.slack-work {
+	type = "slack"
+	token = "xoxb-MAGIC-TOKEN"
+	channel = "my_cool_chan"
+}
+
+
+
+
+
