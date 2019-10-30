@@ -9,7 +9,39 @@
 
 # smug
 
-ugly go bridging bot for irc and slack with (hopefully) more features to come.
+Want to mirror everything from one irc to another with ease?
 
+Want to proxy everything from a slack channel to an irc channel?
 
+Want to proxy everything from a slack channel to an external RESTful api?
+
+Broker communications between irc, slack, other services.
+
+# usage
+
+Download a release or build as documented below.
+
+Copy the `smug.conf.template` file to `smug.conf`.  Edit the file to set your
+connection parameters and keys.
+
+Run like the following:
+
+```bash
+$ ./smug -conf=smug.conf
+```
+
+# building
+
+Assuming golang version 1.12+ installed, you can do the following:
+
+```bash
+$ cd $GOPATH/src
+$ git clone https://github.com/nod/smug
+$ cd smug
+$ make test
+$ make
+```
+
+If all goes well, this should create a `build/smug` as a compiled binary at that
+point.
 

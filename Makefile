@@ -6,18 +6,8 @@ ifndef VER
 	VER := $(shell ./bin/incr_build ./VERSION)
 endif
 
-showme:
-	$(info ver is $(VER))
-	$(info ver is $(VER))
-	$(info ver is $(VER))
-	$(info ver is $(VER))
-
-
 setuplocal:
 	mkdir -p build/tmp
-
-cleanuplocal:
-	rm -rf build
 
 build/smug: setuplocal main.go
 	$(info setting VER to $(VER))

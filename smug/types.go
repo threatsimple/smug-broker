@@ -8,7 +8,12 @@ import "time"
 
 type Broker interface {
     Name() string
-    Publish(*Event, Dispatcher)
+    HandleEvent(*Event, Dispatcher)
+    Setup(...string) // at the end of this func, the broker should be able to
+                     // Handle(event) as needed, whether that is a queue until
+                     // Activate() is called by dispatcher.AddBroker
+    Activate(Dispatcher) // this will setup a runloop if needed for the broker
+    Deactivate() // must not return anything, will be called during destruction
 }
 
 
@@ -29,7 +34,7 @@ type Event struct {
                        // either privately or some other mechanism. this should
                        // not be changed once set by the originating event as it
                        // may specific to a given broker's format
-    Nick string
+    Actor string
     Avatar string
     Text string
     RawText string

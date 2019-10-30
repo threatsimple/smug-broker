@@ -102,7 +102,7 @@ func (lcb *LocalCmdBroker) NewEvent(oldEvent *Event) *Event {
     return &Event{
         IsCmdOutput: true,
         Origin: lcb,
-        Nick: lcb.botNick,
+        Actor: lcb.botNick,
         Avatar: lcb.botAvatar,
         ts: time.Now(),
         ReplyBroker: oldEvent.ReplyBroker,
@@ -111,14 +111,12 @@ func (lcb *LocalCmdBroker) NewEvent(oldEvent *Event) *Event {
 }
 
 
-// since all messages go through the Publish from the Dispatcher we can just
-// hook here to look for local commands
-func (lcb *LocalCmdBroker) Publish(ev *Event, dis Dispatcher) {
+func (lcb *LocalCmdBroker) HandleEvent(ev *Event, dis Dispatcher) {
     // short circuit if not prefixed by cmd prefix
     // there may come a time when we have embedded commands
-    lcb.log.Debugf("inside Publish with: %s", ev.Text)
+    lcb.log.Debugf("inside Handle with: %s", ev.Text)
     if len(ev.Text) >= len(Prefix) && ev.Text[:len(Prefix)] == Prefix {
-        lcb.log.Debugf("inside Publish, matched")
+        lcb.log.Debugf("inside Handle, matched")
         for _,cmd := range lcb.prefixCmds {
             if cmd.match(ev) {
                 cmd.exec(ev, lcb.NewEvent(ev), dis)
@@ -126,8 +124,12 @@ func (lcb *LocalCmdBroker) Publish(ev *Event, dis Dispatcher) {
             }
         }
     } else {
-        lcb.log.Debugf( "no Publish ")
+        lcb.log.Debugf( "no HandleEvent ")
     }
 }
+
+
+func (lcb *LocalCmdBroker) Activate(dis Dispatcher) { }
+func (lcb *LocalCmdBroker) Deactivate() { }
 
 

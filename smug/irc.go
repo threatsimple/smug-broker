@@ -75,7 +75,7 @@ func (ib *IrcBroker) MsgTarget(target string, msg string, prefix string) {
 }
 
 
-func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
+func (ib *IrcBroker) HandleEvent(ev *Event, dis Dispatcher) {
     if ev.ReplyBroker != nil && ev.ReplyBroker != ib {
         // not intended for us, just ignore silently
         return
@@ -84,7 +84,7 @@ func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
     if ev.IsCmdOutput {
         prefix = ""
     } else {
-        prefix = fmt.Sprintf("|%s| ", ev.Nick)
+        prefix = fmt.Sprintf("|%s| ", ev.Actor)
     }
     if ev.ReplyBroker == ib {
         // private message for a user
@@ -95,7 +95,7 @@ func (ib *IrcBroker) Publish(ev *Event, dis Dispatcher) {
 }
 
 
-func (ib *IrcBroker) Run(dis Dispatcher) {
+func (ib *IrcBroker) Activate(dis Dispatcher) {
     // XXX this should ensure some sort of singleton to ensure Run should only
     // ever be called once...
     ib.conn.AddCallback("PRIVMSG", func (e *libirc.Event) {
@@ -107,7 +107,7 @@ func (ib *IrcBroker) Run(dis Dispatcher) {
 
         ev := &Event{
             Origin: ib,
-            Nick: e.Nick,
+            Actor: e.Nick,
             Text: e.Message(),
             ts: time.Now(),
         }
@@ -121,7 +121,7 @@ func (ib *IrcBroker) Run(dis Dispatcher) {
         if e.Arguments[0] == ib.channel {
             ev := &Event{
                 Origin: ib,
-                Nick: e.Nick,
+                Actor: e.Nick,
                 Text: fmt.Sprintf("_ %s %s _", e.Nick, e.Arguments[1]),
                 ts: time.Now(),
             }
@@ -130,4 +130,5 @@ func (ib *IrcBroker) Run(dis Dispatcher) {
     })
 }
 
+func (ib *IrcBroker) Deactivate() { }
 
