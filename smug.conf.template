@@ -28,7 +28,24 @@ brokers.slack-work {
 	channel = "my_cool_chan"
 }
 
-
-
+# pattern routing: read this explicit command
+brokers.pat-readthis {
+	type = "pattern"
+	patterns {
+		read-this-cmd {
+			# any text with "read this" and followed by url, send elsewhere
+			name = "read this cmd"
+			regex = "(?i)read this.+http"
+			url = "https://example.org/readthis/_raw"
+			method = "POST"
+			headers {
+				auth-header = "letmein"
+			}
+			vars {
+				random-var = "nothingness"
+			}
+		}
+	}
+}
 
 
