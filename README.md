@@ -9,6 +9,12 @@
 
 # smug
 
+Want to mirror everything from one irc to another with ease?
+
+Want to proxy everything from a slack channel to an irc channel?
+
+Want to proxy everything from a slack channel to an external RESTful api?
+
 Broker communications between irc, slack, other services.
 
 # usage
@@ -38,5 +44,4 @@ $ make
 
 If all goes well, this should create a `build/smug` as a compiled binary at that
 point.
-
 
