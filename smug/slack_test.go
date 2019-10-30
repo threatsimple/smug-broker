@@ -10,6 +10,7 @@ func TestSimplifyParse(t *testing.T) {
     sb.SetupInternals()
 
     testwants := map[string]string {
+        "vim > emacs": sb.SimplifyParse("vim &gt; emacs"),
         "hey feh": sb.SimplifyParse("hey <http://feh/b|feh>"),
         "hey http://feh/a": sb.SimplifyParse("hey <http://feh/a|>"),
         "hey http://feh/b": sb.SimplifyParse("hey <http://feh/b>"),

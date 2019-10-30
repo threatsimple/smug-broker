@@ -15,6 +15,7 @@ package smug
 
 import (
     "fmt"
+    "html"
     "regexp"
     "strings"
     "sync"
@@ -310,7 +311,9 @@ func (sb *SlackBroker) HandleEvent(ev *Event, dis Dispatcher) {
 }
 
 
-// accept a slack string and remove urls in favor of url descr where available
+// accept a slack string and simplify it
+// - replace html entities (&lt; should be <)
+// - remove urls in favor of url descr where available
 func (sb *SlackBroker) SimplifyParse(s string) string {
     matches := sb.re_embeddedurls.FindAllStringSubmatchIndex(s,-1)
     // start at the end for replacement, this is a bit janky. XXX
@@ -336,7 +339,7 @@ func (sb *SlackBroker) SimplifyParse(s string) string {
         }
         s = strings.ReplaceAll(s, entire_url, udescr)
     }
-    return s
+    return html.UnescapeString(s)
 }
 
 
