@@ -34,7 +34,7 @@ type Event struct {
                        // either privately or some other mechanism. this should
                        // not be changed once set by the originating event as it
                        // may specific to a given broker's format
-    Nick string
+    Actor string
     Avatar string
     Text string
     RawText string

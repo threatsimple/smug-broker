@@ -304,8 +304,8 @@ func (sb *SlackBroker) HandleEvent(ev *Event, dis Dispatcher) {
     sb.api.PostMessage(
         dest,
         libsl.MsgOptionText(txt, false),
-        libsl.MsgOptionUsername(ev.Nick),
-        libsl.MsgOptionIconEmoji(fmt.Sprintf(":avatar_%s:", ev.Nick)),
+        libsl.MsgOptionUsername(ev.Actor),
+        libsl.MsgOptionIconEmoji(fmt.Sprintf(":avatar_%s:", ev.Actor)),
     )
 }
 
@@ -371,7 +371,7 @@ func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
     outstr := strings.TrimSpace(strings.Join(outmsgs, " "))
     ev := &Event{
         Origin: sb,
-        Nick: nick,
+        Actor: nick,
         RawText: outstr,
         Text: sb.SimplifyParse(sb.ConvertRefsToUsers(outstr, false)),
         ts: time.Now(),

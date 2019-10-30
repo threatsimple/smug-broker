@@ -154,12 +154,58 @@ func MakeSlackBroker(cfg *hocon.Config) smug.Broker {
     return sb
 }
 
+func MakePatternBroker(cfg *hocon.Config) smug.Broker {
+    pb := &smug.PatternRoutingBroker{}
+    pats := cfg.GetNode("patterns").GetObject()
+    for _,k := range pats.GetKeys() {
+        name := cfg.GetString(fmt.Sprintf("patterns.%s.name", k))
+        if name == "" {
+            ErrorAndExit("pattern broker pattern.name must not be blank")
+        }
+        p := cfg.GetConfig(fmt.Sprintf("patterns.%s", k))
+        reg := p.GetString("regex")
+        if reg == "" {
+            ErrorAndExit("pattern broker pattern.regex must not be blank")
+        }
+        url := p.GetString("url")
+        if url == "" {
+            ErrorAndExit("pattern broker pattern.url must not be blank")
+        }
+        method := p.GetString("method")
+        if method == "" {
+            ErrorAndExit("pattern broker pattern.method must not be blank")
+        }
+        // do we have headers that get attached?
+        hdrs := map[string]string{}
+        hdrNode := p.GetNode("headers")
+        if hdrNode != nil {
+            hdrObj := hdrNode.GetObject()
+            for _,hk := range hdrObj.GetKeys() {
+                hdrs[hk] = p.GetString(fmt.Sprintf("headers.%s",hk))
+            }
+        }
+        // are there additional vars to attach
+        vars := map[string]string{}
+        varsNode := p.GetNode("vars")
+        if varsNode != nil {
+            varsObj := p.GetNode("vars").GetObject()
+            for _,vk := range varsObj.GetKeys() {
+                vars[vk] = p.GetString(fmt.Sprintf("vars.%s",vk))
+            }
+        }
+        // now build our pattern
+        newp,_ := smug.NewExtendedPattern(name, reg, url, hdrs, vars, method)
+        pb.AddPattern(newp)
+    }
+    return pb
+}
 
 type BrokerBuilder func(*hocon.Config) smug.Broker
 
 func makeBroker(brokerKey string, cfg *hocon.Config) (smug.Broker,error) {
     broker_types := map[string]BrokerBuilder {
         "irc": MakeIrcBroker,
+        "pattern": MakePatternBroker,
         "slack": MakeSlackBroker,
     }
 

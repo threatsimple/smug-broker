@@ -10,7 +10,11 @@ package smug
 
 
 import (
+    "bytes"
+    "encoding/json"
     "fmt"
+    "io/ioutil"
+    "net/http"
     "regexp"
     "strings"
     "sync"
@@ -23,17 +27,25 @@ import (
 
 
 type Pattern struct {
+    name string
     re *regexp.Regexp
     url string
     headers map[string]string
+    vars map[string]string
     method string
 }
 
 
+// for our group matches
+type NamedGroups map[string]string
+
+
 func NewExtendedPattern(
+        name string,
         reg string,
         url string,
         headers map[string]string,
+        vars map[string]string,
         method string,
         ) (*Pattern, error) {
     // validate incoming values a smidge
@@ -48,22 +60,88 @@ func NewExtendedPattern(
     if ! (meth == "GET" || meth == "POST") {
         return nil, fmt.Errorf("method must be either GET or POST")
     }
-    return &Pattern{re:re, url:url, headers:headers, method:method}, nil
+    return &Pattern{
+        name:name,
+        re:re,
+        url:url,
+        headers:headers,
+        method:method,
+    }, nil
 }
 
 
 func NewPattern(reg string, url string) (*Pattern, error) {
     return NewExtendedPattern(
+        "n/a",
         reg,
         url,
+        map[string]string{},
         map[string]string{},
         "POST",
     )
 }
 
 
-func (p *Pattern) parse(ev *Event) {
-    fmt.Printf("\n\nmatches: %+v\n\n", p.re.FindAllStringSubmatch(ev.Text,-1))
+func (p *Pattern) ExtractMatches(text string) ([]string, NamedGroups) {
+    matches := p.re.FindStringSubmatch(text)
+    named := make(NamedGroups)
+    if len(matches) == 0 {
+        return matches,named
+    }
+    for i, name := range p.re.SubexpNames() {
+        if i != 0 && name != "" {
+            named[name] = matches[i]
+        }
+    }
+    return matches,named
+}
+
+
+func (p *Pattern) Handle(ev *Event) bool {
+    matches, named := p.ExtractMatches(ev.Text)
+    if len(matches) == 0 {
+        return false
+    }
+    go p.Submit(ev.Actor, ev.Text, named)
+    return true
+}
+
+
+func (p *Pattern) Submit(actor string, text string, named NamedGroups) error {
+    payload := map[string]string{
+        "actor": actor,
+        "text": text,
+    }
+    for k,v := range named {
+        payload[k] = v
+    }
+    for k,v := range p.vars {
+        payload[k] = v
+    }
+    reqbody, err := json.Marshal(payload)
+    if err != nil {
+        return fmt.Errorf("COULD NOT ENCODE %+v", err)
+    }
+    req,err := http.NewRequest(p.method, p.url, bytes.NewBuffer(reqbody))
+    req.Header.Set("Content-Type", "application/json")
+    for h,v := range p.headers {
+        req.Header.Set(h, v)
+    }
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return fmt.Errorf(
+            "ERR readthis post failed to %s body=%s %+v",
+            p.url, reqbody, err)
+    }
+    defer resp.Body.Close()
+    if err != nil || resp.Status != "200" {
+        body,_ := ioutil.ReadAll(resp.Body)
+        return fmt.Errorf("ERR resp %+v %s", err, string(body))
+        // XXX how to get returned text to broker dispatch??
+        // use a channel?
+    }
+    return nil
 }
 
 
@@ -123,31 +201,16 @@ func (prb *PatternRoutingBroker) Name() string {
 }
 
 
-// args [apiurl, prefix]
+// args [regex,apiurl,method,headers]
 func (prb *PatternRoutingBroker) Setup(args ...string) { }
-
-
-// returns (url, tags)
-func (prb *PatternRoutingBroker) ParseText(line string) (string, string) {
-    /*
-    if strings.HasPrefix(line, rtb.prefix) {
-        found := xurls.Strict().FindString(line)
-        if len(found) > 0 {
-            return found, "" // tags empty for now
-        }
-    }
-    */
-    return "",""
-}
 
 
 func (prb *PatternRoutingBroker) HandleEvent(ev *Event, dis Dispatcher) {
     prb.pmux.RLock()
     defer prb.pmux.RUnlock()
     for _,ptn := range prb.patterns {
-        ptn.parse(ev)
+        ptn.Handle(ev)
     }
-
 }
 
 

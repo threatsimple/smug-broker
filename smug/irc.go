@@ -84,7 +84,7 @@ func (ib *IrcBroker) HandleEvent(ev *Event, dis Dispatcher) {
     if ev.IsCmdOutput {
         prefix = ""
     } else {
-        prefix = fmt.Sprintf("|%s| ", ev.Nick)
+        prefix = fmt.Sprintf("|%s| ", ev.Actor)
     }
     if ev.ReplyBroker == ib {
         // private message for a user
@@ -107,7 +107,7 @@ func (ib *IrcBroker) Activate(dis Dispatcher) {
 
         ev := &Event{
             Origin: ib,
-            Nick: e.Nick,
+            Actor: e.Nick,
             Text: e.Message(),
             ts: time.Now(),
         }
@@ -121,7 +121,7 @@ func (ib *IrcBroker) Activate(dis Dispatcher) {
         if e.Arguments[0] == ib.channel {
             ev := &Event{
                 Origin: ib,
-                Nick: e.Nick,
+                Actor: e.Nick,
                 Text: fmt.Sprintf("_ %s %s _", e.Nick, e.Arguments[1]),
                 ts: time.Now(),
             }

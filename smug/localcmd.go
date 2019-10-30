@@ -102,7 +102,7 @@ func (lcb *LocalCmdBroker) NewEvent(oldEvent *Event) *Event {
     return &Event{
         IsCmdOutput: true,
         Origin: lcb,
-        Nick: lcb.botNick,
+        Actor: lcb.botNick,
         Avatar: lcb.botAvatar,
         ts: time.Now(),
         ReplyBroker: oldEvent.ReplyBroker,
