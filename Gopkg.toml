@@ -29,8 +29,7 @@
   go-tests = true
   unused-packages = true
 
-[[constraint]]
-  # Required: the root import path of the project being constrained.
+[[override]]
   name = "github.com/nlopes/slack"
   source = "https://github.com/nod/slack"
 
