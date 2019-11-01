@@ -34,6 +34,7 @@ const Prefix = ".."
 
 const opVer = "version"
 
+
 type VersionCommand struct {
     log *Logger
     Version string
@@ -114,7 +115,6 @@ func (lcb *LocalCmdBroker) NewEvent(oldEvent *Event) *Event {
 func (lcb *LocalCmdBroker) HandleEvent(ev *Event, dis Dispatcher) {
     // short circuit if not prefixed by cmd prefix
     // there may come a time when we have embedded commands
-    lcb.log.Debugf("inside Handle with: %s", ev.Text)
     if len(ev.Text) >= len(Prefix) && ev.Text[:len(Prefix)] == Prefix {
         lcb.log.Debugf("inside Handle, matched")
         for _,cmd := range lcb.prefixCmds {
@@ -123,8 +123,6 @@ func (lcb *LocalCmdBroker) HandleEvent(ev *Event, dis Dispatcher) {
                 return
             }
         }
-    } else {
-        lcb.log.Debugf( "no HandleEvent ")
     }
 }
 

@@ -4,6 +4,7 @@ import (
     "flag"
     "fmt"
     "os"
+    "runtime"
     "time"
 
     hocon "github.com/go-akka/configuration"
@@ -156,6 +157,7 @@ func MakeSlackBroker(cfg *hocon.Config) smug.Broker {
 
 func MakePatternBroker(cfg *hocon.Config) smug.Broker {
     pb := &smug.PatternRoutingBroker{}
+    pb.Setup()
     pats := cfg.GetNode("patterns").GetObject()
     for _,k := range pats.GetKeys() {
         name := cfg.GetString(fmt.Sprintf("patterns.%s.name", k))
@@ -247,7 +249,8 @@ func main() {
     smug.SetupLogging(opts.loglevel)
 
     log := smug.NewLogger("smug")
-    log.Infof("starting smug ver:%s", version)
+    maxprocs := runtime.GOMAXPROCS(-1)
+    log.Infof("starting smug ver:%s gomaxprocs:%d", version, maxprocs)
 
     dispatcher := smug.NewCentralDispatch()
 
@@ -263,30 +266,6 @@ func main() {
         dispatcher.AddBroker(b)
         defer dispatcher.RemoveBroker(b)
     }
-
-    /*
-    // slack setup
-    sb := &smug.SlackBroker{}
-    sb.Setup(opts.slack.token, opts.slack.channel)
-    dispatcher.AddBroker(sb)
-    defer dispatcher.RemoveBroker(sb)
-
-    // irc
-    ib := &smug.IrcBroker{}
-    ib.Setup(
-        opts.irc.server,
-        opts.irc.channel,
-        opts.irc.nick,
-        fmt.Sprintf("%s-%s", "smug", version),
-    )
-    dispatcher.AddBroker(ib)
-    defer dispatcher.RemoveBroker(ib)
-
-    prb := &smug.PatternRoutingBroker{}
-    // prbrtb.Setup(opts.rt.apibase, opts.rt.prefix, opts.rt.authcode)
-    dispatcher.AddBroker(prb)
-    defer dispatcher.RemoveBroker(prb)
-    */
 
     // just loop here for now so others can run like happy little trees
     for true {

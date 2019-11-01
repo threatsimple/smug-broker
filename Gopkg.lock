@@ -31,6 +31,7 @@
     "slackutilsx"
   ]
   revision = "1af34b6bda3d43878255fff7bd2884ea0c23295e"
+  source = "https://github.com/nod/slack"
   version = "v0.6.0"
 
 [[projects]]
@@ -60,6 +61,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6ea9e8490ea9276a7d72d11e6621ee4ba859ef8ab4c812a68def8d1c3e7b7772"
+  inputs-digest = "84b3a9365df9925396e833a327073f075369341831bfd232d56ed5c207455418"
   solver-name = "gps-cdcl"
   solver-version = 1

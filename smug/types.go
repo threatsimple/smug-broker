@@ -37,6 +37,7 @@ type Event struct {
     Actor string
     Avatar string
     Text string
+    RichText string
     RawText string
     ts time.Time
 }

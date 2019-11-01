@@ -18,6 +18,7 @@ import (
     "regexp"
     "strings"
     "sync"
+    "time"
 )
 
 
@@ -97,17 +98,22 @@ func (p *Pattern) ExtractMatches(text string) ([]string, NamedGroups) {
 }
 
 
-func (p *Pattern) Handle(ev *Event) bool {
+func (p *Pattern) Handle(ev *Event, feedback chan *Event) {
     matches, named := p.ExtractMatches(ev.Text)
     if len(matches) == 0 {
-        return false
+        return
     }
-    go p.Submit(ev.Actor, ev.Text, named)
-    return true
+    go p.Submit(ev, ev.Actor, ev.Text, named, feedback)
 }
 
 
-func (p *Pattern) Submit(actor string, text string, named NamedGroups) error {
+func (p *Pattern) Submit(
+        originEvt *Event,
+        actor string,
+        text string,
+        named NamedGroups,
+        feedback chan *Event,
+        ) {
     payload := map[string]string{
         "actor": actor,
         "text": text,
@@ -120,7 +126,7 @@ func (p *Pattern) Submit(actor string, text string, named NamedGroups) error {
     }
     reqbody, err := json.Marshal(payload)
     if err != nil {
-        return fmt.Errorf("COULD NOT ENCODE %+v", err)
+        return
     }
     req,err := http.NewRequest(p.method, p.url, bytes.NewBuffer(reqbody))
     req.Header.Set("Content-Type", "application/json")
@@ -130,18 +136,38 @@ func (p *Pattern) Submit(actor string, text string, named NamedGroups) error {
     client := &http.Client{}
     resp, err := client.Do(req)
     if err != nil {
-        return fmt.Errorf(
-            "ERR readthis post failed to %s body=%s %+v",
+        fmt.Printf(
+            "ERR readthis post failed to %s body=%s %+v\n",
             p.url, reqbody, err)
+        return
     }
     defer resp.Body.Close()
-    if err != nil || resp.Status != "200" {
-        body,_ := ioutil.ReadAll(resp.Body)
-        return fmt.Errorf("ERR resp %+v %s", err, string(body))
-        // XXX how to get returned text to broker dispatch??
-        // use a channel?
+    body,_ := ioutil.ReadAll(resp.Body)
+    if err != nil || ! strings.HasPrefix(resp.Status, "200") {
+        fmt.Printf("ERR resp  %s %+v %s\n", err, resp.Status, string(body))
+        return
     }
-    return nil
+    // now attempt to see if anything returned
+    if len(string(body)) > 0 {
+        var dat map[string]interface{}
+        if err = json.Unmarshal(body, &dat); err != nil {
+            // just abadon hope here
+            fmt.Printf("ERR WITH JSON UNMARSHAL got body of %s", string(body))
+            return
+        }
+        text := dat["text"].(string)
+        richtext := dat["text"].(string)
+        feedback <- &Event{
+            IsCmdOutput: true,
+            Origin: nil, // PRB will set this
+            ReplyBroker: originEvt.ReplyBroker,
+            ReplyTarget: originEvt.ReplyTarget,
+            Actor: "",
+            Text: text,
+            RichText: richtext,
+            ts: time.Now(),
+        }
+    }
 }
 
 
@@ -151,7 +177,9 @@ func (p *Pattern) Submit(actor string, text string, named NamedGroups) error {
 
 
 type PatternRoutingBroker struct {
+    log *Logger
     pmux sync.RWMutex
+    feedback chan *Event
     patterns []*Pattern
 }
 
@@ -163,58 +191,34 @@ func (prb *PatternRoutingBroker) AddPattern(newp *Pattern) {
 }
 
 
-/*
-func (rtb *ReadThisBroker) Submit(
-        nick string, url string, tags string, text string ) {
-    reqbody, err := json.Marshal(map[string]string{
-        "nick":nick,
-        "url":url,
-        "text":text,
-    })
-    if err != nil {
-        log.Printf("COULD NOT ENCODE %+v", err)
-        return
-    }
-    req,err := http.NewRequest("POST", rtb.apiurl, bytes.NewBuffer(reqbody))
-    req.Header.Set("X-ReadThis-Auth", rtb.authcode)
-    req.Header.Set("Content-Type", "application/json")
-    log.Printf("readthis posting to %s body=%s", rtb.apiurl, reqbody)
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        log.Printf("ERR readthis post failed to %s body=%s %+v",
-            rtb.apiurl, reqbody, err)
-        return
-    }
-    defer resp.Body.Close()
-    if err != nil || resp.Status != "200" {
-        body,_ := ioutil.ReadAll(resp.Body)
-        log.Printf("ERR resp %+v %s", err, string(body))
-        return
-    }
-}
-*/
-
-
 func (prb *PatternRoutingBroker) Name() string {
     return "pattern-router"
 }
 
 
 // args [regex,apiurl,method,headers]
-func (prb *PatternRoutingBroker) Setup(args ...string) { }
+func (prb *PatternRoutingBroker) Setup(args ...string) {
+    prb.log = NewLogger(prb.Name())
+    prb.feedback = make(chan *Event, 100)
+}
 
 
 func (prb *PatternRoutingBroker) HandleEvent(ev *Event, dis Dispatcher) {
     prb.pmux.RLock()
     defer prb.pmux.RUnlock()
     for _,ptn := range prb.patterns {
-        ptn.Handle(ev)
+        ptn.Handle(ev, prb.feedback)
     }
 }
 
 
-func (prb *PatternRoutingBroker) Activate(dis Dispatcher) { }
+func (prb *PatternRoutingBroker) Activate(dis Dispatcher) {
+    for {
+        ev := <-(prb.feedback)
+        ev.Origin = prb
+        dis.Broadcast(ev)
+    }
+}
 
 func (prb *PatternRoutingBroker) Deactivate() { }
 
