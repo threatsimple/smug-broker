@@ -29,8 +29,8 @@
   go-tests = true
   unused-packages = true
 
-[[override]]
-  name = "github.com/nlopes/slack"
-  source = "https://github.com/nod/slack"
+# [[override]]
+  # name = "github.com/nlopes/slack"
+  # source = "https://github.com/nod/slack"
 
 

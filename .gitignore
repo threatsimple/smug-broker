@@ -1,5 +1,6 @@
 
 smug.conf
+smug.yaml
 secrets.config
 build
 testing.conf

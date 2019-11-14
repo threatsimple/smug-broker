@@ -61,6 +61,7 @@ func (b *Blocks) UnmarshalJSON(data []byte) error {
 		case "section":
 			block = &SectionBlock{}
 		case "rich_text":
+		    // for now ignore the freaking rich_text junk
             continue
 		default:
 			return errors.New("unsupported block type")

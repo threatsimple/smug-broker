@@ -7,61 +7,11 @@ import (
     "runtime"
     "time"
 
-    hocon "github.com/go-akka/configuration"
-
     smug "github.com/nod/smug/smug"
 )
 
 
 var version string
-
-
-type SlackOpts struct {
-    token string
-    channel string
-}
-
-
-func parseSlackOpts() *SlackOpts {
-    opts := &SlackOpts{}
-    flag.StringVar(&opts.token, "slack-token", "", "slack api token")
-    flag.StringVar(&opts.channel, "slack-channel", "", "slack channel to join")
-    return opts
-}
-
-
-type IrcOpts struct {
-    server string
-    is_ssl bool
-    channel string
-    nick string
-}
-
-
-func parseIrcOpts() *IrcOpts {
-    opts := &IrcOpts{}
-    flag.StringVar(&opts.server, "irc-server", "", "irc server")
-    flag.StringVar(&opts.channel, "irc-channel", "", "irc channel")
-    flag.BoolVar(&opts.is_ssl, "irc-ssl", true, "irc ssl")
-    flag.StringVar(&opts.nick, "irc-nick", "", "irc nick")
-    return opts
-}
-
-
-type ReadThisOpts struct {
-    apibase string
-    authcode string
-    prefix string
-}
-
-
-func parseReadThisOpts() *ReadThisOpts {
-    opts := &ReadThisOpts{}
-    flag.StringVar(&opts.apibase, "rt-api", "", "readthis api base url")
-    flag.StringVar(&opts.authcode, "rt-auth", "", "readthis auth code")
-    flag.StringVar(&opts.prefix, "rt-prefix", "", "readthis prefix trigger")
-    return opts
-}
 
 
 type RuntimeOpts struct {
@@ -85,14 +35,6 @@ func buildRuntimeOpts() *RuntimeOpts {
 }
 
 
-type Opts struct {
-    irc *IrcOpts
-    slack *SlackOpts
-    rt *ReadThisOpts
-    runtime *RuntimeOpts
-}
-
-
 func ErrorAndExit(msg string) {
     fmt.Printf(
         "ERR %s\nusage: %s",
@@ -104,7 +46,7 @@ func ErrorAndExit(msg string) {
 }
 
 
-func parseOpts() (*RuntimeOpts, *hocon.Config) {
+func parseConfig() (*RuntimeOpts, *smug.Config) {
     runopts := buildRuntimeOpts()
     flag.Parse()
 
@@ -126,16 +68,17 @@ func parseOpts() (*RuntimeOpts, *hocon.Config) {
         ))
     }
 
-    cfg := hocon.LoadConfig(runopts.configFile)
+    cfg := smug.LoadConfig(runopts.configFile)
+    fmt.Printf("CFG is %+v\n\n", cfg)
     return runopts, cfg
 }
 
 
-func MakeIrcBroker(cfg *hocon.Config) smug.Broker {
-    server := cfg.GetString("server")
+func MakeIrcBroker(cfg *smug.BrokerConfig) smug.Broker {
+    server := cfg.Server
     // cfg.GetBool("ssl")
-    nick := cfg.GetString("nick")
-    channel := cfg.GetString("channel")
+    nick := cfg.Nick
+    channel := cfg.Channel
     ib := &smug.IrcBroker{}
     ib.Setup(
         server,
@@ -147,92 +90,63 @@ func MakeIrcBroker(cfg *hocon.Config) smug.Broker {
 }
 
 
-func MakeSlackBroker(cfg *hocon.Config) smug.Broker {
-    token := cfg.GetString("token")
-    channel := cfg.GetString("channel")
+func MakeSlackBroker(cfg *smug.BrokerConfig) smug.Broker {
+    token := cfg.ApiToken
+    channel := cfg.Channel
     sb := &smug.SlackBroker{}
     sb.Setup(token, channel)
     return sb
 }
 
-func MakePatternBroker(cfg *hocon.Config) smug.Broker {
+func MakePatternBroker(cfg *smug.BrokerConfig) smug.Broker {
     pb := &smug.PatternRoutingBroker{}
     pb.Setup()
-    pats := cfg.GetNode("patterns").GetObject()
-    for _,k := range pats.GetKeys() {
-        name := cfg.GetString(fmt.Sprintf("patterns.%s.name", k))
-        if name == "" {
-            ErrorAndExit("pattern broker pattern.name must not be blank")
-        }
-        p := cfg.GetConfig(fmt.Sprintf("patterns.%s", k))
-        reg := p.GetString("regex")
-        if reg == "" {
+    for _,p := range cfg.Patterns {
+        if p.RegEx == "" {
             ErrorAndExit("pattern broker pattern.regex must not be blank")
         }
-        url := p.GetString("url")
-        if url == "" {
+        if p.Url == "" {
             ErrorAndExit("pattern broker pattern.url must not be blank")
         }
-        method := p.GetString("method")
-        if method == "" {
+        if p.Method == "" {
             ErrorAndExit("pattern broker pattern.method must not be blank")
         }
-        // do we have headers that get attached?
-        hdrs := map[string]string{}
-        hdrNode := p.GetNode("headers")
-        if hdrNode != nil {
-            hdrObj := hdrNode.GetObject()
-            for _,hk := range hdrObj.GetKeys() {
-                hdrs[hk] = p.GetString(fmt.Sprintf("headers.%s",hk))
-            }
-        }
-        // are there additional vars to attach
-        vars := map[string]string{}
-        varsNode := p.GetNode("vars")
-        if varsNode != nil {
-            varsObj := p.GetNode("vars").GetObject()
-            for _,vk := range varsObj.GetKeys() {
-                vars[vk] = p.GetString(fmt.Sprintf("vars.%s",vk))
-            }
-        }
         // now build our pattern
-        newp,_ := smug.NewExtendedPattern(name, reg, url, hdrs, vars, method)
+        newp,_ := smug.NewExtendedPattern(
+            p.Name, p.RegEx, p.Url, p.Headers, p.Vars, p.Method )
         pb.AddPattern(newp)
     }
     return pb
 }
 
-type BrokerBuilder func(*hocon.Config) smug.Broker
+type BrokerBuilder func(*smug.BrokerConfig) smug.Broker
 
-func makeBroker(brokerKey string, cfg *hocon.Config) (smug.Broker,error) {
+func makeBroker(brokerKey string, cfg *smug.BrokerConfig) (smug.Broker,error) {
     broker_types := map[string]BrokerBuilder {
         "irc": MakeIrcBroker,
         "pattern": MakePatternBroker,
         "slack": MakeSlackBroker,
     }
-
-    brobj := cfg.GetConfig(fmt.Sprintf("brokers.%s",brokerKey))
-    if brobj == nil {
-        return nil,fmt.Errorf(
-            "broker config brokers.%s object not found", brokerKey,
-        )
-    }
-
-    brokerType := brobj.GetString("type")
+    brokerType := cfg.Type
     if broker_factory,ok := broker_types[brokerType]; ok {
-        // valid broker, create it up!
-        return broker_factory(brobj),nil
+        // valid broker, make it up!
+        return broker_factory(cfg),nil
     } else {
         return nil, fmt.Errorf("invalid broker type: %s", brokerType)
     }
 }
 
 
-func createBrokers(cfg *hocon.Config) []smug.Broker {
-    active_brokers := cfg.GetStringList("active-brokers")
+func createBrokers(cfg *smug.Config) []smug.Broker {
+    fmt.Printf("inside CreateBrokers %+v\n\n", cfg)
     brokers := []smug.Broker{}
-    for _,ab := range active_brokers {
-        b,err := makeBroker(ab, cfg)
+    for _,ab := range cfg.ActiveBrokers {
+        fmt.Printf("creating BROKER %s\n\n", ab)
+        brcfg,found := cfg.Brokers[ab]
+        if !found {
+            panic(fmt.Sprintf("missing broker config: %s", ab))
+        }
+        b,err := makeBroker(ab, &brcfg)
         if err != nil {
             panic(err)
         }
@@ -241,9 +155,8 @@ func createBrokers(cfg *hocon.Config) []smug.Broker {
     return brokers
 }
 
-
 func main() {
-    opts,cfg := parseOpts()
+    opts,cfg := parseConfig()
 
     // setup logging first
     smug.SetupLogging(opts.loglevel)

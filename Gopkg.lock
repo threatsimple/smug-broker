@@ -2,15 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
-  name = "github.com/go-akka/configuration"
-  packages = [
-    ".",
-    "hocon"
-  ]
-  revision = "a31c845c4b1bb4009d0d6a2e07ae9f16ff4ff582"
-
-[[projects]]
   name = "github.com/gorilla/websocket"
   packages = ["."]
   revision = "c3e18be99d19e6b3e8f1559eea2c161a665c4b6b"
@@ -31,7 +22,6 @@
     "slackutilsx"
   ]
   revision = "1af34b6bda3d43878255fff7bd2884ea0c23295e"
-  source = "https://github.com/nod/slack"
   version = "v0.6.0"
 
 [[projects]]
@@ -58,9 +48,15 @@
   packages = ["unix"]
   revision = "2837fb4f24fee082b8c39b1a6dc9e0ed9f3fbd4f"
 
+[[projects]]
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "f90ceb4f409096b60e2e9076b38b304b8246e5fa"
+  version = "v2.2.5"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "68678563e8dc5cc14b97d8b7ef78e79293c584d8e232256d43ec11f8614624b6"
+  inputs-digest = "f9a4276bbcd5d344f76b4435882363d1efdf5a1f101707ca9574efd6fdf42672"
   solver-name = "gps-cdcl"
   solver-version = 1
