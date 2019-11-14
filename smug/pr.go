@@ -98,12 +98,26 @@ func (p *Pattern) ExtractMatches(text string) ([]string, NamedGroups) {
 }
 
 
-func (p *Pattern) Handle(ev *Event, feedback chan *Event) {
+func (p *Pattern) Handle(ev *Event, feedback chan *Event) bool {
     matches, named := p.ExtractMatches(ev.Text)
     if len(matches) == 0 {
-        return
+        return false
     }
     go p.Submit(ev, ev.Actor, ev.Text, named, feedback)
+    return true
+}
+
+
+type JsonBlock struct {
+    Text string `json:text`
+    Img string  `json:img`
+    Title string `json:title`
+}
+
+
+type JsonResponse struct {
+    Text string `json:text`
+    Blocks []JsonBlock `json:blocks`
 }
 
 
@@ -149,14 +163,21 @@ func (p *Pattern) Submit(
     }
     // now attempt to see if anything returned
     if len(string(body)) > 0 {
-        var dat map[string]interface{}
+        var dat JsonResponse
+        fmt.Printf("JSON BODY IS\n%s", string(body))
         if err = json.Unmarshal(body, &dat); err != nil {
             // just abadon hope here
             fmt.Printf("ERR WITH JSON UNMARSHAL got body of %s", string(body))
             return
         }
-        text := dat["text"].(string)
-        richtext := dat["text"].(string)
+        text := dat.Text
+        blocks := []*EventBlock{}
+        for _,blk := range dat.Blocks {
+            blocks = append(blocks,
+                &EventBlock{Title: blk.Title, Text:blk.Text, ImgUrl:blk.Img},
+            )
+        }
+        fmt.Printf("dat: %+v \n\n", dat)
         feedback <- &Event{
             IsCmdOutput: true,
             Origin: nil, // PRB will set this
@@ -164,7 +185,7 @@ func (p *Pattern) Submit(
             ReplyTarget: originEvt.ReplyTarget,
             Actor: "",
             Text: text,
-            RichText: richtext,
+            ContentBlocks: blocks,
             ts: time.Now(),
         }
     }
@@ -207,7 +228,9 @@ func (prb *PatternRoutingBroker) HandleEvent(ev *Event, dis Dispatcher) {
     prb.pmux.RLock()
     defer prb.pmux.RUnlock()
     for _,ptn := range prb.patterns {
-        ptn.Handle(ev, prb.feedback)
+        if ptn.Handle(ev, prb.feedback) {
+            break
+        }
     }
 }
 
@@ -216,6 +239,7 @@ func (prb *PatternRoutingBroker) Activate(dis Dispatcher) {
     for {
         ev := <-(prb.feedback)
         ev.Origin = prb
+        fmt.Printf("recvd from Channel: %+v", ev)
         dis.Broadcast(ev)
     }
 }

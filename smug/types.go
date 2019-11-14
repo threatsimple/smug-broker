@@ -6,6 +6,17 @@ package smug
 import "time"
 
 
+type ContentType int
+
+const (
+    CONTENT_DISPLAY = iota
+    CONTENT_META = iota
+)
+
+func (c ContentType) String() string {
+    return [...]string{"Display", "Meta"}[c]
+}
+
 type Broker interface {
     Name() string
     HandleEvent(*Event, Dispatcher)
@@ -24,6 +35,14 @@ type Dispatcher interface {
     NumBrokers() int
 }
 
+type EventBlock struct {
+    // some event displays could use a bit more layout control
+    Title string
+    Text string
+    ImgUrl string
+    Type ContentType
+}
+
 
 type Event struct {
     IsCmdOutput bool
@@ -37,8 +56,8 @@ type Event struct {
     Actor string
     Avatar string
     Text string
-    RichText string
     RawText string
+    ContentBlocks []*EventBlock
     ts time.Time
 }
 

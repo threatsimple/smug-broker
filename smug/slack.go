@@ -175,7 +175,6 @@ type SlackBroker struct {
 }
 
 
-
 func (sb *SlackBroker) Name() string {
     return fmt.Sprintf("slack-%s", sb.channel)
 }
@@ -187,7 +186,7 @@ func (sb *SlackBroker) SetupInternals() {
     sb.log = NewLogger("slack")
     sb.usercache = &SlackUserCache{}
     sb.usercache.Setup()
-    sb.re_uids = regexp.MustCompile(`<@(U\w+)>`) // get sub ids in msgs
+    sb.re_uids = regexp.MustCompile(`<@(U[\w|]+)>`) // get sub ids in msgs
     sb.re_usernick = regexp.MustCompile(`^(\w+):`)
     sb.re_atusers = regexp.MustCompile(`@(\w+)\b`)
     sb.re_embeddedurls = regexp.MustCompile(`<(http.+\|?.*)>`)
@@ -196,20 +195,32 @@ func (sb *SlackBroker) SetupInternals() {
 
 func (sb *SlackBroker) ConvertRefsToUsers(s string, cacheOnly bool) string {
     matches := sb.re_uids.FindAllStringSubmatchIndex(s,-1)
-    // will contain a uniq set of uids mentioned
-    uids := make(map[string]bool)
+    // will eventually contain a uniq set of uids mentioned
+    uids := make(map[string]string) // uidstr->nick
+    // first, rip through all patterns and look up in cache
     for i := len(matches)-1; i >= 0; i-- {
         // start,stop,sub0,sublen := matches[i]
         m := matches[i]
         uid := s[m[2]:m[3]]
-        if ! uids[uid] { uids[uid] = true }
+        var nick string
+        if strings.Contains(uid, "|") {
+            fmt.Printf("split userref  %s\n\n", uid)
+            parts := strings.Split(uid, "|")
+            fmt.Printf("PARTS IS %s\n", parts)
+            if len(parts) > 0 {
+                nick = sb.usercache.UserNick(sb, parts[0], cacheOnly)
+            }
+        } else {
+            nick = sb.usercache.UserNick(sb, uid, cacheOnly)
+        }
+        if _,found := uids[uid]; ! found { uids[uid] = nick }
     }
-    // now iterate over uids and replace them all
-    for u,_ := range uids {
+    // now iterate over refs and replace them all
+    for u,n := range uids {
         s = strings.ReplaceAll(
             s,
             fmt.Sprintf("<@%s>",u),
-            sb.usercache.UserNick(sb, u, cacheOnly),
+            n, //sb.usercache.UserNick(sb, u, cacheOnly),
         )
     }
     return s
@@ -290,6 +301,10 @@ func (sb *SlackBroker) Setup(args ...string) {
 }
 
 
+func (sb *SlackBroker) SendComplexMsg(dest string, text string, ev *Event) {
+
+}
+
 func (sb *SlackBroker) HandleEvent(ev *Event, dis Dispatcher) {
     if ev.ReplyBroker != nil && ev.ReplyBroker != sb {
         // if not intended for us, eject here
@@ -302,9 +317,48 @@ func (sb *SlackBroker) HandleEvent(ev *Event, dis Dispatcher) {
     } else {
         dest = ev.ReplyTarget
     }
+
+    var msgContent libsl.MsgOption
+    if ev.ContentBlocks != nil && len(ev.ContentBlocks) > 0 {
+        blockslice := []libsl.Block{}
+        for _,db := range ev.ContentBlocks {
+            var headerText *libsl.TextBlockObject
+            var headerSect *libsl.SectionBlock
+            if len(db.Title) > 0 {
+                // just bold it
+                headerText = libsl.NewTextBlockObject(
+                    "mrkdwn", "*" + db.Title + "*", false, false )
+                headerSect = libsl.NewSectionBlock(
+                    headerText, nil, nil )
+                blockslice = append(blockslice, headerSect)
+            }
+            // continue if nothing else but header in this block
+            if db.Text == "" && db.ImgUrl == "" {
+                continue
+            }
+            fmt.Printf("\nbuilding BLOCK %+v\n\n", db)
+            msgText := libsl.NewTextBlockObject("mrkdwn", db.Text, false, false)
+            if len(db.ImgUrl) > 0 {
+	            msgImg := libsl.NewImageBlockElement(db.ImgUrl, "accimg")
+                msgSect := libsl.NewSectionBlock(
+                    msgText, nil, libsl.NewAccessory(msgImg) )
+                fmt.Printf("\nmade SECT: %+v", msgSect)
+                blockslice = append(blockslice, msgSect)
+            } else {
+                msgSect := libsl.NewSectionBlock(
+                    msgText, nil, nil)
+                fmt.Printf("\nmade SECT: %+v", msgSect)
+                blockslice = append(blockslice, msgSect)
+            }
+        }
+        msgContent = libsl.MsgOptionBlocks(blockslice...)
+    } else {
+        msgContent = libsl.MsgOptionText(txt, false)
+    }
     sb.api.PostMessage(
         dest,
-        libsl.MsgOptionText(txt, false),
+        libsl.MsgOptionText("", false),
+        msgContent,
         libsl.MsgOptionUsername(ev.Actor),
         libsl.MsgOptionIconEmoji(fmt.Sprintf(":avatar_%s:", ev.Actor)),
     )

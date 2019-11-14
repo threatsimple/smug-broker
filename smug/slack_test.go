@@ -49,6 +49,8 @@ func TestConvertSlackRefs(t *testing.T) {
             "aaaa dude boy",
         sb.ConvertRefsToUsers("<@U54321> dude <@U54321>", true):
             "boy dude boy",
+        sb.ConvertRefsToUsers("thinks <@U54321|boy> believes", true):
+            "thinks boy believes",
         sb.ConvertRefsToUsers(" <@88888> congradulations!!!", true):
             " <@88888> congradulations!!!",
         sb.ConvertUsersToRefs("boy: gobble", true):

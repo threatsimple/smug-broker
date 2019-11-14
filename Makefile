@@ -21,6 +21,7 @@ clean: setuplocal
 	rm -rf build
 
 test: export TMPDIR=build/tmp
+test: export CGO_ENABLED=0
 test: setuplocal
 	go test -v ./...
 
