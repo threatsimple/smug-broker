@@ -21,13 +21,13 @@ Broker communications between irc, slack, other services.
 
 Download a release or build as documented below.
 
-Copy the `smug.conf.template` file to `smug.conf`.  Edit the file to set your
+Copy the `smug.yaml.template` file to `smug.yaml`.  Edit the file to set your
 connection parameters and keys.
 
 Run like the following:
 
 ```bash
-$ ./smug -conf=smug.conf
+$ ./smug -conf=smug.yaml
 ```
 
 # building

@@ -1,0 +1,43 @@
+
+# runtime config
+
+# this is a list of brokers to bring up at startup. there must be a
+# corresponding configuration stanza hanging off the brokers object
+# Note - there are nothing magical about these slugs.  They must be unique
+# for each broker config stanza.
+active-brokers:
+  - ircbroker
+  - slackbroker
+  - patroutes
+
+brokers:
+
+  ircbroker:
+    type    : "irc"
+    server  : "some.irc.example.com"
+    ssl     : true
+    nick    : "smug"
+    channel : "#chan"
+
+  slackbroker:
+    name  : "slackbroker"
+    type  : "slack"
+    token  : "xoxb-slack-token-blah-blahblah"
+    channel : "#general"
+
+  patroutes:
+    type : "pattern"
+    patterns :
+      -
+        name   : "weather"
+        help  : ".wthr city,state"
+        regex  : '(?i)^\.wthr (?P<city>.+)$'
+        url    : "https://example.com/smug/weather"
+        method  : "POST"
+      -
+        name  : "forecast"
+        help  : "-f city,state"
+        regex  : '(?i)^\.forecast (?P<city>.+)$'
+        url    : "https://example.com/smug/forecast"
+        method  : "POST"
+
