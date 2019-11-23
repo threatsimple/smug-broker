@@ -4,7 +4,7 @@
 
 package smug
 
-
+ 
 import (
     "crypto/tls"
     "fmt"
@@ -65,11 +65,20 @@ func (ib *IrcBroker) Setup(args ...string) {
 
 
 func (ib *IrcBroker) MsgTarget(target string, msg string, prefix string) {
+    maxlen := 500
     for i,s := range strings.Split(msg, "\n") {
         if i > 6 { return } // just stop
         if len(s) > 0 {
-            time.Sleep(100 * time.Millisecond) // slow down a flood
-            ib.conn.Privmsg(target,prefix + s)
+            if len(s) > maxlen {
+                outs := ChunkSplit(s, maxlen)
+                for _,s := range outs {
+                    ib.conn.Privmsg(target,prefix + s)
+                    time.Sleep(100 * time.Millisecond) //slow down a flood
+                }
+            } else {
+                ib.conn.Privmsg(target,prefix + s)
+                if i > 0 { time.Sleep(100 * time.Millisecond) } //slow down a flood
+            }
         }
     }
 }
