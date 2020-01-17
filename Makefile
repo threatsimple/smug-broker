@@ -1,6 +1,10 @@
 
+default: binaries
 
-default: build/smug
+PACKAGES := $(shell go list -f {{.Dir}} ./...)
+GOFILES  := $(addsuffix /*.go,$(PACKAGES))
+GOFILES  := $(wildcard $(GOFILES))
+
 VER =
 ifndef VER
 	VER := $(shell ./bin/incr_build ./VERSION)
@@ -24,4 +28,18 @@ test: export TMPDIR=build/tmp
 test: export CGO_ENABLED=0
 test: setuplocal
 	go test -v ./...
+
+binaries: build/smug-linux-x86 build/smug-macos-x86 build/smug-linux-arm64
+
+build/smug-linux-x86: $(GOFILES)
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VER)" -o build/smug-linux-x86 main.go
+
+build/smug-macos-x86: $(GOFILES)
+	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$(VER)" -o build/smug-macos-x86 main.go
+
+build/smug-linux-arm64: $(GOFILES)
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VER)" -o build/smug-linux-arm64  main.go
+
+
+
 
