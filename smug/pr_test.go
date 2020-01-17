@@ -2,8 +2,29 @@ package smug
 
 
 import (
+    "strings"
     "testing"
 )
+
+
+func TestHelpPattern(t *testing.T) {
+    pb := &PatternRoutingBroker{}
+    pb.AddPattern(&Pattern{help:"help me"})
+    hp := &HelperPattern{pbroker:pb}
+    val := hp.Handle(&Event{Text:"nope"}, make(chan *Event, 5))
+    if val {
+        t.Errorf("should not trigger helper pattern")
+    }
+    feedback := make(chan *Event, 5)
+    val = hp.Handle(&Event{Text:"..list"}, feedback)
+    if !val {
+        t.Errorf("did not trigger on keyword")
+    }
+    listev := <-feedback
+    if ! strings.HasPrefix(listev.Text, "help me") {
+        t.Errorf("invalid help returned %s", listev.Text)
+    }
+}
 
 
 func TestBasicPatternParse(t *testing.T) {

@@ -21,6 +21,11 @@ If you used the regex `^..echo\b(?P<what>.+)$` then any line started with
 `..echo ` and following text would match and a var of `what` would include the
 text following the `..echo ` portion.
 
+## help text
+
+The command `..list` will provide a message containing the help text from any
+defined Pattern with a non-empty `help` attribute.
+
 ## API Payload
 
 The API body will be a json encoded payload, and a content-type header of

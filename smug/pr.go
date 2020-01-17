@@ -23,9 +23,47 @@ import (
 
 
 // --------------------------------------------------
+// MetaPattern
+// the pattern archetype that all patterns should obey
+// --------------------------------------------------
+
+type MetaPattern interface {
+    Handle(*Event, chan *Event) bool
+    HelpText() string
+}
+
+// --------------------------------------------------
 // Pattern
 // --------------------------------------------------
 
+type HelperPattern struct {
+    pbroker *PatternRoutingBroker
+}
+
+func (hp *HelperPattern) HelpText() string {
+    return ""
+}
+
+func (hp *HelperPattern) Handle(ev *Event, feedback chan *Event) bool {
+    if strings.HasPrefix(ev.Text, "..list") {
+        feedback <- &Event{
+            IsCmdOutput: true,
+            Origin: nil, // PRB will set this
+            ReplyBroker: ev.ReplyBroker,
+            ReplyTarget: ev.ReplyTarget,
+            Actor: "",
+            Text: hp.pbroker.HelpText(),
+            ContentBlocks: nil,
+            ts: time.Now(),
+        }
+        return true
+    }
+    return false
+}
+
+// --------------------------------------------------
+// Pattern
+// --------------------------------------------------
 
 type Pattern struct {
     name string
@@ -34,6 +72,7 @@ type Pattern struct {
     headers map[string]string
     vars map[string]string
     method string
+    help string
 }
 
 
@@ -48,6 +87,7 @@ func NewExtendedPattern(
         headers map[string]string,
         vars map[string]string,
         method string,
+        help string,
         ) (*Pattern, error) {
     // validate incoming values a smidge
     if len(url) < 10 && ! strings.HasPrefix("http", strings.ToLower(url)) {
@@ -67,9 +107,13 @@ func NewExtendedPattern(
         url:url,
         headers:headers,
         method:method,
+        help:help,
     }, nil
 }
 
+func (p *Pattern) HelpText() string {
+    return p.help
+}
 
 func NewPattern(reg string, url string) (*Pattern, error) {
     return NewExtendedPattern(
@@ -79,6 +123,7 @@ func NewPattern(reg string, url string) (*Pattern, error) {
         map[string]string{},
         map[string]string{},
         "POST",
+        "",
     )
 }
 
@@ -201,11 +246,11 @@ type PatternRoutingBroker struct {
     log *Logger
     pmux sync.RWMutex
     feedback chan *Event
-    patterns []*Pattern
+    patterns []MetaPattern
 }
 
 
-func (prb *PatternRoutingBroker) AddPattern(newp *Pattern) {
+func (prb *PatternRoutingBroker) AddPattern(newp MetaPattern) {
     prb.pmux.Lock()
     prb.patterns = append(prb.patterns, newp)
     prb.pmux.Unlock()
@@ -216,11 +261,22 @@ func (prb *PatternRoutingBroker) Name() string {
     return "pattern-router"
 }
 
+func (prb *PatternRoutingBroker) HelpText() string {
+    retval := []string{}
+    for _,ptn := range prb.patterns {
+        ht := ptn.HelpText()
+        if ht != "" {
+            retval = append(retval, ht)
+        }
+    }
+    return strings.Join(retval, "\n")
+}
 
 // args [regex,apiurl,method,headers]
 func (prb *PatternRoutingBroker) Setup(args ...string) {
     prb.log = NewLogger(prb.Name())
     prb.feedback = make(chan *Event, 100)
+    prb.AddPattern(&HelperPattern{pbroker:prb})
 }
 
 
@@ -239,7 +295,6 @@ func (prb *PatternRoutingBroker) Activate(dis Dispatcher) {
     for {
         ev := <-(prb.feedback)
         ev.Origin = prb
-        fmt.Printf("recvd from Channel: %+v", ev)
         dis.Broadcast(ev)
     }
 }
