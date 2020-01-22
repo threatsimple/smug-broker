@@ -138,7 +138,7 @@ func createBrokers(cfg *smug.Config) []smug.Broker {
 		if !found {
 			panic(fmt.Sprintf("missing broker config: %s", ab))
 		}
-		b, err := makeBroker(ab, &brcfg)
+		b, err := makeBroker(ab, brcfg)
 		if err != nil {
 			panic(err)
 		}

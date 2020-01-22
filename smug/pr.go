@@ -212,7 +212,6 @@ func (p *Pattern) Submit(
 				&EventBlock{Title: blk.Title, Text: blk.Text, ImgUrl: blk.Img},
 			)
 		}
-		fmt.Printf("dat: %+v \n\n", dat)
 		feedback <- &Event{
 			IsCmdOutput:   true,
 			Origin:        nil, // PRB will set this

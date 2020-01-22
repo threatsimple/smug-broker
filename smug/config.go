@@ -1,7 +1,11 @@
 package smug
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
+	"reflect"
+	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -21,17 +25,39 @@ type PatternConfig struct {
 // however, doing it this way allows the yaml unmarshal to Just Work(TM)
 type BrokerConfig struct {
 	Type     string          `yaml:"type"`
-	Server   string          `yaml:"server"`
-	ApiToken string          `yaml:"token"`
-	UseSSL   bool            `yaml:"ssl"`
-	Nick     string          `yaml:"nick"`
-	Channel  string          `yaml:"channel"`
+	Server   string          `yaml:"server" envcfg:"SERVER"`
+	ApiToken string          `yaml:"token" envcfg:"APITOKEN"`
+	UseSSL   bool            `yaml:"ssl" envcfg:"SSL"`
+	Nick     string          `yaml:"nick" envcfg:"NICK"`
+	Channel  string          `yaml:"channel" envcfg:"CHANNEL"`
 	Patterns []PatternConfig `yaml:"patterns"`
 }
 
 type Config struct {
-	ActiveBrokers []string                `yaml:"active-brokers"`
-	Brokers       map[string]BrokerConfig `yaml:"brokers"`
+	ActiveBrokers []string                 `yaml:"active-brokers"`
+	Brokers       map[string]*BrokerConfig `yaml:"brokers"`
+}
+
+func envOverrides(cfg *Config) {
+	// populates from any environment variables
+	for key, bcfg := range cfg.Brokers {
+		b := reflect.TypeOf(*bcfg)
+		for i := 0; i < b.NumField(); i++ {
+			fld := b.Field(i)
+			envkey := fld.Tag.Get("envcfg")
+			if envkey == "" {
+				continue
+			}
+			envnm := fmt.Sprintf(
+				"SMUG_%s_%s", strings.ToUpper(key), envkey)
+			val := os.Getenv(envnm)
+			if val == "" {
+				continue
+			}
+			bf := reflect.ValueOf(bcfg).Elem().Field(i)
+			bf.SetString(val)
+		}
+	}
 }
 
 func LoadConfig(configFile string) *Config {
@@ -44,5 +70,6 @@ func LoadConfig(configFile string) *Config {
 	if err != nil {
 		panic(err)
 	}
+	envOverrides(&cfg)
 	return &cfg
 }

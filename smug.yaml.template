@@ -6,38 +6,42 @@
 # Note - there are nothing magical about these slugs.  They must be unique
 # for each broker config stanza.
 active-brokers:
-  - ircbroker
-  - slackbroker
+  - irc
+  - slack
   - patroutes
 
 brokers:
 
-  ircbroker:
+  irc:
     type    : "irc"
     server  : "some.irc.example.com"
     ssl     : true
     nick    : "smug"
     channel : "#chan"
 
-  slackbroker:
+  slack:
     name  : "slackbroker"
     type  : "slack"
     token  : "xoxb-slack-token-blah-blahblah"
     channel : "#general"
+
+# these patterns depend on having a smugapi instance
+# https://github.com/threatsimple/smugapi
 
   patroutes:
     type : "pattern"
     patterns :
       -
         name   : "weather"
-        help  : ".wthr city,state"
-        regex  : '(?i)^\.wthr (?P<city>.+)$'
-        url    : "https://example.com/smug/weather"
+        help  : ".wx city,state - current weather"
+        regex  : '(?i)^\.wx (?P<city>.+)$'
+        url    : "https://example.com/weather"
         method  : "POST"
       -
         name  : "forecast"
-        help  : "-f city,state"
+        help  : ".fc city,state - weather forecast"
         regex  : '(?i)^\.forecast (?P<city>.+)$'
-        url    : "https://example.com/smug/forecast"
+        url    : "https://example.com/forecast"
         method  : "POST"
+
 

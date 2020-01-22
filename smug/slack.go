@@ -183,9 +183,7 @@ func (sb *SlackBroker) ConvertRefsToUsers(s string, cacheOnly bool) string {
 		uid := s[m[2]:m[3]]
 		var nick string
 		if strings.Contains(uid, "|") {
-			fmt.Printf("split userref  %s\n\n", uid)
 			parts := strings.Split(uid, "|")
-			fmt.Printf("PARTS IS %s\n", parts)
 			if len(parts) > 0 {
 				nick = sb.usercache.UserNick(sb, parts[0], cacheOnly)
 			}
@@ -314,18 +312,15 @@ func (sb *SlackBroker) HandleEvent(ev *Event, dis Dispatcher) {
 			if db.Text == "" && db.ImgUrl == "" {
 				continue
 			}
-			fmt.Printf("\nbuilding BLOCK %+v\n\n", db)
 			msgText := libsl.NewTextBlockObject("mrkdwn", db.Text, false, false)
 			if len(db.ImgUrl) > 0 {
 				msgImg := libsl.NewImageBlockElement(db.ImgUrl, "accimg")
 				msgSect := libsl.NewSectionBlock(
 					msgText, nil, libsl.NewAccessory(msgImg))
-				fmt.Printf("\nmade SECT: %+v", msgSect)
 				blockslice = append(blockslice, msgSect)
 			} else {
 				msgSect := libsl.NewSectionBlock(
 					msgText, nil, nil)
-				fmt.Printf("\nmade SECT: %+v", msgSect)
 				blockslice = append(blockslice, msgSect)
 			}
 		}
@@ -376,7 +371,6 @@ func (sb *SlackBroker) SimplifyParse(s string) string {
 func (sb *SlackBroker) ParseToEvent(e *libsl.MessageEvent) *Event {
 	sb.log.Debugf("%+v", e)
 	nick := sb.usercache.UserNick(sb, e.User, false)
-	fmt.Printf("\n\nnick %s\n\n", nick)
 	outmsgs := []string{e.Text}
 	if len(e.Files) > 0 {
 		for _, f := range e.Files {
