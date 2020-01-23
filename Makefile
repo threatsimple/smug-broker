@@ -29,13 +29,13 @@ test: export CGO_ENABLED=0
 test: setuplocal
 	go test -v ./...
 
-binaries: build/smug-linux-x86 build/smug-macos-x86 build/smug-linux-arm64
+binaries: build/smug-linux-amd64 build/smug-macos-amd64 build/smug-linux-arm64
 
-build/smug-linux-x86: $(GOFILES)
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VER)" -o build/smug-linux-x86 main.go
+build/smug-linux-amd64: $(GOFILES)
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VER)" -o build/smug-linux-amd64 main.go
 
-build/smug-macos-x86: $(GOFILES)
-	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$(VER)" -o build/smug-macos-x86 main.go
+build/smug-macos-amd64: $(GOFILES)
+	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$(VER)" -o build/smug-macos-amd64 main.go
 
 build/smug-linux-arm64: $(GOFILES)
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VER)" -o build/smug-linux-arm64  main.go

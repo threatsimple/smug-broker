@@ -1,0 +1,19 @@
+
+# runtime config
+
+# this is a list of brokers to bring up at startup. there must be a
+# corresponding configuration stanza hanging off the brokers object
+# Note - there are nothing magical about these slugs.  They must be unique
+# for each broker config stanza.
+active-brokers:
+  - tester
+
+brokers:
+
+  tester:
+    type    : "irc"
+    server  : "some.example.com"
+    ssl     : true
+    nick    : "smug"
+    channel : "#chan"
+

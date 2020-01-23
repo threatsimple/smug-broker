@@ -1,6 +1,5 @@
 package smug
 
-
 /*
 
 import (
@@ -69,4 +68,3 @@ func TestConvertSlackRefs(t *testing.T) {
 
 }
 */
-
