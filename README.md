@@ -17,6 +17,21 @@ Want to proxy everything from a slack channel to an external RESTful api?
 
 Broker communications between irc, slack, other services.
 
+# quickstart
+
+To connect a slack channel to irc, set some environment variables and then run
+the docker command.
+
+```
+export SMUG_IRC_SERVER="irc.example.com:6667"
+export SMUG_IRC_CHANNEL="#my_chan"
+export SMUG_SLACK_TOKEN="xoxo-blah"
+docker run -e SMUG_IRC_SERVER,SMUG_IRC_CHANNEL,SMUG_SLACK_TOKEN threatsimple/smug:latest
+```
+
+Note - getting a slack token requires creating an integration.  It's simple but
+can seem daunting.  We'll write a doc about that shortly.
+
 # usage
 
 Download a release or build as documented below.
