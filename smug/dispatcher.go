@@ -19,7 +19,7 @@ func NewCentralDispatch() *CentralDispatch {
 }
 
 func (cd *CentralDispatch) Broadcast(ev *Event) {
-	// hand to all
+	// publish to all
 	cd.mux.RLock()
 	for _, b := range cd.brokers {
 		if ev.Origin != b {

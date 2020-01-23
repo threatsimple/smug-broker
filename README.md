@@ -30,6 +30,8 @@ Run like the following:
 $ ./smug -conf=smug.yaml
 ```
 
+See `doc/config.md` for more configuration details.
+
 # building
 
 Assuming golang version 1.12+ installed, you can do the following:
