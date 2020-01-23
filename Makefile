@@ -45,4 +45,9 @@ build-docker: build/smug-linux-amd64
 	docker build -t threatsimple/smug:`cat VERSION` .
 	docker build -t threatsimple/smug:latest .
 
+tagproj:
+	git tag -a v`cat VERSION`
+	git push --tags
+
+
 
