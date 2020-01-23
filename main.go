@@ -64,7 +64,6 @@ func parseConfig() (*RuntimeOpts, *smug.Config) {
 	}
 
 	cfg := smug.LoadConfig(runopts.configFile)
-	fmt.Printf("CFG is %+v\n\n", cfg)
 	return runopts, cfg
 }
 
@@ -130,10 +129,8 @@ func makeBroker(brokerKey string, cfg *smug.BrokerConfig) (smug.Broker, error) {
 }
 
 func createBrokers(cfg *smug.Config) []smug.Broker {
-	fmt.Printf("inside CreateBrokers %+v\n\n", cfg)
 	brokers := []smug.Broker{}
 	for _, ab := range cfg.ActiveBrokers {
-		fmt.Printf("creating BROKER %s\n\n", ab)
 		brcfg, found := cfg.Brokers[ab]
 		if !found {
 			panic(fmt.Sprintf("missing broker config: %s", ab))

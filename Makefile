@@ -41,5 +41,8 @@ build/smug-linux-arm64: $(GOFILES)
 	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(VER)" -o build/smug-linux-arm64  main.go
 
 
+build-docker: build/smug-linux-amd64
+	docker build -t threatsimple/smug:`cat VERSION` .
+	docker build -t threatsimple/smug:latest .
 
 

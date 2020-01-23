@@ -33,6 +33,11 @@ This broker consumes, and produces to, one irc channel.  Anything sent to this
 channel is dispatched to any other active broker.  Likewise, anything sent to
 the other active brokers gets published to the irc channel.
 
+**note** the format of the server connection string is
+`server.domain.com:portnum`.  So if it's connecting on 6697 for ssl, you'd use
+`irc.example.com:6697`.  If you don't specify a port, `:6667` will be appended
+for you.
+
 ## slack broker
 
 This broker connects to a slack network and brokers between slack and other
