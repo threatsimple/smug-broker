@@ -10,9 +10,9 @@ From there, click **App Home**, then click **Add Legacy Bot User**.
 
 Click **Install app**
 
-On the following page, click **Allow**.
+On the following page, if you're a slack admin, click **Allow**.  If you're not you'll have to request approval.
 
-Under the **Install App** settings, copy your **Bot User OAuth Access Token**.
+Once the app is installed, under the **Install App** settings, copy your **Bot User OAuth Access Token**.
 It will look like `xoxb-...`.
 
 Add that token to the `smug.yaml` file under the slack section, or set it in
