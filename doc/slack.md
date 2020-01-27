@@ -4,7 +4,7 @@ Slack has complicated adding bots just a bit in favor of slack apps.
 
 BUT you can still create a classic slack app for now.
 
-https://api.slack.com/apps?new\_classic\_app=1
+https://api.slack.com/apps?new_classic_app=1
 
 Click **App Home**, then click **Add Legacy Bot User**.
 
