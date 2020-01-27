@@ -29,8 +29,16 @@ export SMUG_SLACK_TOKEN="xoxo-blah"
 docker run -e SMUG_IRC_SERVER,SMUG_IRC_CHANNEL,SMUG_SLACK_TOKEN threatsimple/smug:latest
 ```
 
-Note - getting a slack token requires creating an integration.  It's simple but
-can seem daunting.  We'll write a doc about that shortly.
+Note - slack has complicated getting the proper token.
+See [doc/slack.md](./blob/master/doc/slack.md) for brief instructions.
+
+## SLACK PERMISSIONS
+
+When you create an app integration in slack, be sure to add the `users:read`
+scope or you will have issues.
+
+I'm trying to automate this process in an upcoming release but for now it's a
+manual step.
 
 # usage
 
