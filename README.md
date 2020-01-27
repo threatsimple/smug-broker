@@ -30,7 +30,7 @@ docker run -e SMUG_IRC_SERVER,SMUG_IRC_CHANNEL,SMUG_SLACK_TOKEN threatsimple/smu
 ```
 
 Note - slack has complicated getting the proper token.
-See [doc/slack.md](blob/master/doc/slack.md) for brief instructions.
+See [doc/slack.md](doc/slack.md) for brief instructions.
 
 ## SLACK PERMISSIONS
 
