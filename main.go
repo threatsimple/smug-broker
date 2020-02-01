@@ -104,8 +104,11 @@ func MakePatternBroker(cfg *smug.BrokerConfig) smug.Broker {
 			ErrorAndExit("pattern broker pattern.method must not be blank")
 		}
 		// now build our pattern
-		newp, _ := smug.NewExtendedPattern(
+		newp, err := smug.NewExtendedPattern(
 			p.Name, p.RegEx, p.Url, p.Headers, p.Vars, p.Method, p.Help)
+        if err != nil {
+            panic(fmt.Sprintf("error creating PatternBroker %s", err))
+        }
 		pb.AddPattern(newp)
 	}
 	return pb
