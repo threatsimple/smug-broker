@@ -4,16 +4,15 @@ Slack has complicated adding bots just a bit in favor of slack apps.
 
 BUT you can still create a classic slack app for now.
 
-https://api.slack.com/apps?new\_classic\_app=1
+Visit https://api.slack.com/apps?new_classic_app=1 and then complete the "Create a Slack App (Classic)" form.
 
-Click **App Home**, then click **Add Legacy Bot User**.
-
+From there, click **App Home**, then click **Add Legacy Bot User**.
 
 Click **Install app**
 
-On the following page, click **Allow**.
+On the following page, if you're a slack admin, click **Allow**.  If you're not you'll have to request approval.
 
-Under the **Install App** settings, copy your **Bot User OAuth Access Token**.
+Once the app is installed, under the **Install App** settings, copy your **Bot User OAuth Access Token**.
 It will look like `xoxb-...`.
 
 Add that token to the `smug.yaml` file under the slack section, or set it in
