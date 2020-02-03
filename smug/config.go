@@ -33,9 +33,15 @@ type BrokerConfig struct {
 	Patterns []PatternConfig `yaml:"patterns"`
 }
 
+type TelemetryConfig struct {
+    Host    string          `yaml:"host"`
+    Port    int          `yaml:"port"`
+}
+
 type Config struct {
 	ActiveBrokers []string                 `yaml:"active-brokers"`
 	Brokers       map[string]*BrokerConfig `yaml:"brokers"`
+    Metrics       map[string]*TelemetryConfig `yaml:"metrics"`
 }
 
 func envOverrides(cfg *Config) {

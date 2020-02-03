@@ -4,6 +4,10 @@ package smug
 
 import "time"
 
+
+// ----------------------------------------
+// Content Types
+
 type ContentType int
 
 const (
@@ -15,6 +19,17 @@ func (c ContentType) String() string {
 	return [...]string{"Display", "Meta"}[c]
 }
 
+
+// ----------------------------------------
+// Metrics
+
+type Telemetry interface {
+    Setup(*TelemetryConfig)
+}
+
+// ----------------------------------------
+// Broker Definitions
+
 type Broker interface {
 	Name() string
 	HandleEvent(*Event, Dispatcher)
@@ -23,6 +38,7 @@ type Broker interface {
 	// Activate() is called by dispatcher.AddBroker
 	Activate(Dispatcher) // this will setup a runloop if needed for the broker
 	Deactivate()         // must not return anything, will be called during destruction
+    Status()
 }
 
 type Dispatcher interface {
@@ -31,6 +47,9 @@ type Dispatcher interface {
 	RemoveBroker(Broker) error
 	NumBrokers() int
 }
+
+// ----------------------------------------
+// Event Types
 
 type EventBlock struct {
 	// some event displays could use a bit more layout control
@@ -56,3 +75,4 @@ type Event struct {
 	ContentBlocks []*EventBlock
 	ts            time.Time
 }
+
